@@ -150,7 +150,7 @@ ul { list-style: none; }
 .rating-score { display: block; font-size: 3rem; font-weight: bold; color: var(--dark); line-height: 1; }
 .rating-stars { font-size: 1.3rem; color: var(--gold); margin: .25rem 0; }
 .rating-count { font-size: .82rem; color: var(--gray); }
-.reviews-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+.reviews-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
 .review-card {
   background: var(--white); border-radius: var(--radius); padding: 1.75rem;
   border-left: 4px solid var(--border);
