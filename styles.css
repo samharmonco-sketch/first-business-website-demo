@@ -308,6 +308,7 @@ img { display: block; max-width: 100%; }
 .hours-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
 .hours-table td { padding: .2rem 1rem .2rem 0; color: var(--mid); }
 .hours-table td:last-child { font-weight: 600; color: var(--charcoal); }
+.hours-table em { font-style: normal; font-weight: 400; color: var(--gold); font-size: .8rem; }
 .directions-link {
   display: inline-flex; align-items: center; gap: .5rem;
   font-size: .78rem; font-weight: 600; letter-spacing: 1px;
