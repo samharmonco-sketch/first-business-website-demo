@@ -1,21 +1,52 @@
+// Navbar scroll behavior
+const navbar = document.getElementById('navbar');
+if (navbar) {
+  window.addEventListener('scroll', () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 60);
+  }, { passive: true });
+}
+
+// Hero image zoom on load
+const heroBg = document.querySelector('.hero-bg');
+if (heroBg) {
+  const img = new Image();
+  img.onload = () => heroBg.classList.add('loaded');
+  img.src = heroBg.style.backgroundImage.replace(/url\(['"]?(.*?)['"]?\)/, '$1');
+}
+
 // Mobile nav toggle
 const navToggle = document.querySelector('.nav-toggle');
 const navLinks = document.querySelector('.nav-links');
 if (navToggle) {
   navToggle.addEventListener('click', () => navLinks.classList.toggle('open'));
+  document.addEventListener('click', e => {
+    if (!navbar.contains(e.target)) navLinks.classList.remove('open');
+  });
 }
 
-// Set date input min to today
-const dateInput = document.getElementById('date');
-if (dateInput) {
-  const today = new Date().toISOString().split('T')[0];
-  dateInput.min = today;
+// Show more / fewer reviews
+const showMoreBtn = document.getElementById('show-more-reviews');
+const hiddenReviews = document.querySelectorAll('.hidden-review');
+let expanded = false;
+if (showMoreBtn) {
+  showMoreBtn.addEventListener('click', () => {
+    expanded = !expanded;
+    hiddenReviews.forEach(r => {
+      r.classList.toggle('visible', expanded);
+    });
+    showMoreBtn.textContent = expanded ? 'Show Fewer Reviews' : 'Show All Reviews';
+  });
 }
 
-// Contact / booking form
+// Contact form
 const form = document.getElementById('contact-form');
 const formSuccess = document.getElementById('form-success');
 const resetBtn = document.getElementById('reset-form');
+
+const dateInput = document.getElementById('date');
+if (dateInput) {
+  dateInput.min = new Date().toISOString().split('T')[0];
+}
 
 function showError(id, msg) {
   const err = document.getElementById(id + '-error');
@@ -33,27 +64,30 @@ function clearError(id) {
 if (form) {
   ['first-name', 'last-name', 'phone', 'service', 'date', 'time'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.addEventListener('input', () => clearError(id));
-    if (el) el.addEventListener('change', () => clearError(id));
+    if (el) {
+      el.addEventListener('input', () => clearError(id));
+      el.addEventListener('change', () => clearError(id));
+    }
   });
 
   form.addEventListener('submit', e => {
     e.preventDefault();
     let valid = true;
 
-    const firstName = document.getElementById('first-name')?.value.trim();
-    const lastName  = document.getElementById('last-name')?.value.trim();
-    const phone     = document.getElementById('phone')?.value.trim();
-    const service   = document.getElementById('service')?.value;
-    const date      = document.getElementById('date')?.value;
-    const time      = document.getElementById('time')?.value;
+    const checks = [
+      ['first-name', 'First name is required.'],
+      ['last-name',  'Last name is required.'],
+      ['phone',      'Phone number is required.'],
+      ['service',    'Please select a service.'],
+      ['date',       'Please choose a date.'],
+      ['time',       'Please choose a time.'],
+    ];
 
-    if (!firstName) { showError('first-name', 'First name is required.'); valid = false; } else clearError('first-name');
-    if (!lastName)  { showError('last-name',  'Last name is required.');  valid = false; } else clearError('last-name');
-    if (!phone)     { showError('phone', 'Phone number is required.');    valid = false; } else clearError('phone');
-    if (!service)   { showError('service', 'Please select a service.');   valid = false; } else clearError('service');
-    if (!date)      { showError('date', 'Please choose a date.');         valid = false; } else clearError('date');
-    if (!time)      { showError('time', 'Please choose a time.');         valid = false; } else clearError('time');
+    checks.forEach(([id, msg]) => {
+      const val = document.getElementById(id)?.value?.trim();
+      if (!val) { showError(id, msg); valid = false; }
+      else clearError(id);
+    });
 
     if (valid) {
       form.classList.add('hidden');
