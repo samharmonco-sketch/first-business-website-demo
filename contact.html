@@ -3,24 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contact – Mario's Pizza</title>
+  <title>Book Now – The Barbershop</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+
   <nav class="navbar">
-    <div class="nav-brand">🍕 Mario's Pizza</div>
+    <a href="index.html" class="nav-brand">✂ The Barbershop</a>
     <ul class="nav-links">
       <li><a href="index.html">Home</a></li>
-      <li><a href="menu.html">Menu</a></li>
-      <li><a href="contact.html" class="active">Contact</a></li>
+      <li><a href="services.html">Services</a></li>
+      <li><a href="contact.html" class="active">Book Now</a></li>
     </ul>
     <button class="nav-toggle" aria-label="Toggle menu">&#9776;</button>
   </nav>
 
   <div class="page-header">
     <div class="container">
-      <h1>Contact Us</h1>
-      <p>Place an order, ask a question, or just say hello</p>
+      <h1>Book an Appointment</h1>
+      <p>Or just walk in — we always welcome walk-ins</p>
     </div>
   </div>
 
@@ -28,14 +29,14 @@
     <div class="contact-layout">
 
       <div class="contact-info">
-        <h2>Get in Touch</h2>
-        <p>We'd love to hear from you. Stop by, give us a call, or send us a message below.</p>
+        <h2>Visit Us</h2>
+        <p>Stop by anytime during business hours, or fill out the form and we'll confirm your spot.</p>
 
         <div class="info-block">
           <div class="info-icon">📍</div>
           <div>
             <h4>Address</h4>
-            <p>123 Napoli Street<br>Little Italy, NY 10013</p>
+            <p>128 S Cass Ave<br>Westmont, IL 60559</p>
           </div>
         </div>
 
@@ -43,15 +44,7 @@
           <div class="info-icon">📞</div>
           <div>
             <h4>Phone</h4>
-            <p><a href="tel:+12125550182">(212) 555-0182</a></p>
-          </div>
-        </div>
-
-        <div class="info-block">
-          <div class="info-icon">✉️</div>
-          <div>
-            <h4>Email</h4>
-            <p><a href="mailto:info@mariospizza.com">info@mariospizza.com</a></p>
+            <p><a href="tel:+16302870775">(630) 287-0775</a></p>
           </div>
         </div>
 
@@ -60,82 +53,114 @@
           <div>
             <h4>Hours</h4>
             <table class="hours-table">
-              <tr><td>Monday – Thursday</td><td>11am – 10pm</td></tr>
-              <tr><td>Friday – Saturday</td><td>11am – 11pm</td></tr>
-              <tr><td>Sunday</td><td>12pm – 9pm</td></tr>
+              <tr><td>Monday</td><td>9 AM – 7 PM</td></tr>
+              <tr><td>Tuesday</td><td>9 AM – 7 PM</td></tr>
+              <tr><td>Wednesday</td><td>9 AM – 7 PM</td></tr>
+              <tr><td>Thursday</td><td>9 AM – 7 PM</td></tr>
+              <tr><td>Friday</td><td>9 AM – 7 PM</td></tr>
+              <tr><td>Saturday</td><td>8 AM – 5 PM</td></tr>
+              <tr><td>Sunday</td><td>Closed</td></tr>
             </table>
           </div>
         </div>
 
         <div class="map-placeholder">
           <div class="map-inner">
-            <span>📍 123 Napoli Street, Little Italy, NY</span>
+            <div class="map-pin">📍</div>
+            <p>128 S Cass Ave<br>Westmont, IL 60559</p>
+            <a href="https://maps.google.com/?q=128+S+Cass+Ave+Westmont+IL+60559" target="_blank" rel="noopener" class="btn btn-sm">Get Directions</a>
           </div>
         </div>
       </div>
 
       <div class="contact-form-wrapper">
-        <h2>Send a Message</h2>
+        <h2>Request an Appointment</h2>
 
         <div id="form-success" class="form-success hidden">
           <div class="success-icon">✅</div>
-          <h3>Message Sent!</h3>
-          <p>Thanks for reaching out. We'll get back to you within 24 hours.</p>
-          <button class="btn btn-primary" id="reset-form">Send Another Message</button>
+          <h3>Request Received!</h3>
+          <p>We'll give you a call to confirm your appointment. See you soon!</p>
+          <button class="btn btn-primary" id="reset-form">Book Another</button>
         </div>
 
         <form id="contact-form" novalidate>
           <div class="form-row">
             <div class="form-group">
               <label for="first-name">First Name <span class="required">*</span></label>
-              <input type="text" id="first-name" name="first-name" placeholder="Mario" required />
+              <input type="text" id="first-name" name="first-name" placeholder="Jane" required />
               <span class="field-error" id="first-name-error"></span>
             </div>
             <div class="form-group">
               <label for="last-name">Last Name <span class="required">*</span></label>
-              <input type="text" id="last-name" name="last-name" placeholder="Rossi" required />
+              <input type="text" id="last-name" name="last-name" placeholder="Smith" required />
               <span class="field-error" id="last-name-error"></span>
             </div>
           </div>
 
           <div class="form-group">
-            <label for="email">Email Address <span class="required">*</span></label>
-            <input type="email" id="email" name="email" placeholder="mario@example.com" required />
-            <span class="field-error" id="email-error"></span>
+            <label for="phone">Phone Number <span class="required">*</span></label>
+            <input type="tel" id="phone" name="phone" placeholder="(630) 555-0000" required />
+            <span class="field-error" id="phone-error"></span>
           </div>
 
           <div class="form-group">
-            <label for="phone">Phone Number</label>
-            <input type="tel" id="phone" name="phone" placeholder="(212) 555-0000" />
-          </div>
-
-          <div class="form-group">
-            <label for="subject">Subject <span class="required">*</span></label>
-            <select id="subject" name="subject" required>
-              <option value="">Select a subject…</option>
-              <option value="order">Place an Order</option>
-              <option value="reservation">Make a Reservation</option>
-              <option value="catering">Catering Inquiry</option>
-              <option value="feedback">Feedback</option>
-              <option value="other">Other</option>
+            <label for="service">Service <span class="required">*</span></label>
+            <select id="service" name="service" required>
+              <option value="">Select a service…</option>
+              <option value="mens-cut">Men's Haircut – $20</option>
+              <option value="kids-cut">Kids' Haircut – $16</option>
+              <option value="womens-buzz">Women's Buzz / Short Cut – $20</option>
+              <option value="senior-cut">Senior Cut – $17</option>
+              <option value="fade">Fade – $25</option>
+              <option value="cut-beard">Haircut + Beard Trim – $30</option>
+              <option value="beard-trim">Beard Trim &amp; Line-up – $12</option>
+              <option value="straight-shave">Straight Razor Shave – $25</option>
+              <option value="head-shave">Head Shave – $20</option>
             </select>
-            <span class="field-error" id="subject-error"></span>
+            <span class="field-error" id="service-error"></span>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="date">Preferred Date <span class="required">*</span></label>
+              <input type="date" id="date" name="date" required />
+              <span class="field-error" id="date-error"></span>
+            </div>
+            <div class="form-group">
+              <label for="time">Preferred Time <span class="required">*</span></label>
+              <select id="time" name="time" required>
+                <option value="">Select a time…</option>
+                <option>9:00 AM</option>
+                <option>9:30 AM</option>
+                <option>10:00 AM</option>
+                <option>10:30 AM</option>
+                <option>11:00 AM</option>
+                <option>11:30 AM</option>
+                <option>12:00 PM</option>
+                <option>12:30 PM</option>
+                <option>1:00 PM</option>
+                <option>1:30 PM</option>
+                <option>2:00 PM</option>
+                <option>2:30 PM</option>
+                <option>3:00 PM</option>
+                <option>3:30 PM</option>
+                <option>4:00 PM</option>
+                <option>4:30 PM</option>
+                <option>5:00 PM</option>
+                <option>5:30 PM</option>
+                <option>6:00 PM</option>
+                <option>6:30 PM</option>
+              </select>
+              <span class="field-error" id="time-error"></span>
+            </div>
           </div>
 
           <div class="form-group">
-            <label for="message">Message <span class="required">*</span></label>
-            <textarea id="message" name="message" rows="5" placeholder="Tell us what you'd like…" required></textarea>
-            <span class="field-error" id="message-error"></span>
+            <label for="notes">Additional Notes</label>
+            <textarea id="notes" name="notes" rows="3" placeholder="Anything specific you'd like us to know?"></textarea>
           </div>
 
-          <div class="form-group checkbox-group">
-            <label class="checkbox-label">
-              <input type="checkbox" id="newsletter" name="newsletter" />
-              <span>Sign me up for special offers and news from Mario's</span>
-            </label>
-          </div>
-
-          <button type="submit" class="btn btn-primary btn-full">Send Message</button>
+          <button type="submit" class="btn btn-primary btn-full">Request Appointment</button>
         </form>
       </div>
 
@@ -143,28 +168,22 @@
   </main>
 
   <footer class="footer">
-    <div class="container footer-content">
+    <div class="container footer-inner">
       <div class="footer-brand">
-        <div class="nav-brand">🍕 Mario's Pizza</div>
-        <p>Serving authentic Italian pizza since 1962.</p>
+        <a href="index.html" class="nav-brand">✂ The Barbershop</a>
+        <p>128 S Cass Ave, Westmont, IL 60559</p>
+        <p>(630) 287-0775</p>
       </div>
-      <div class="footer-links">
-        <h4>Quick Links</h4>
+      <div class="footer-nav">
         <ul>
           <li><a href="index.html">Home</a></li>
-          <li><a href="menu.html">Menu</a></li>
-          <li><a href="contact.html">Contact</a></li>
+          <li><a href="services.html">Services</a></li>
+          <li><a href="contact.html">Book Now</a></li>
         </ul>
-      </div>
-      <div class="footer-contact">
-        <h4>Find Us</h4>
-        <p>123 Napoli Street<br>Little Italy, NY 10013</p>
-        <p>(212) 555-0182</p>
-        <p>info@mariospizza.com</p>
       </div>
     </div>
     <div class="footer-bottom">
-      <p>&copy; 2026 Mario's Pizza. All rights reserved.</p>
+      <p>&copy; 2026 The Barbershop · Westmont, IL</p>
     </div>
   </footer>
 
