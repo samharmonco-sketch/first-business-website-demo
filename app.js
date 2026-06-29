@@ -6,14 +6,6 @@ if (navbar) {
   }, { passive: true });
 }
 
-// Hero image zoom on load
-const heroBg = document.querySelector('.hero-bg');
-if (heroBg) {
-  const img = new Image();
-  img.onload = () => heroBg.classList.add('loaded');
-  img.src = heroBg.style.backgroundImage.replace(/url\(['"]?(.*?)['"]?\)/, '$1');
-}
-
 // Mobile nav toggle
 const navToggle = document.querySelector('.nav-toggle');
 const navLinks = document.querySelector('.nav-links');
@@ -31,9 +23,7 @@ let expanded = false;
 if (showMoreBtn) {
   showMoreBtn.addEventListener('click', () => {
     expanded = !expanded;
-    hiddenReviews.forEach(r => {
-      r.classList.toggle('visible', expanded);
-    });
+    hiddenReviews.forEach(r => r.classList.toggle('visible', expanded));
     showMoreBtn.textContent = expanded ? 'Show Fewer Reviews' : 'Show All Reviews';
   });
 }
@@ -42,10 +32,78 @@ if (showMoreBtn) {
 const form = document.getElementById('contact-form');
 const formSuccess = document.getElementById('form-success');
 const resetBtn = document.getElementById('reset-form');
-
+const serviceSelect = document.getElementById('service');
 const dateInput = document.getElementById('date');
+const dateHint = document.getElementById('date-hint');
+
+// Returns true if a date string (YYYY-MM-DD) falls on a Saturday
+function isSaturday(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d).getDay() === 6;
+}
+
+// Next upcoming Saturday from today
+function nextSaturday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  const diff = (6 - d.getDay() + 7) % 7 || 7;
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().split('T')[0];
+}
+
+function getServiceType() {
+  const opt = serviceSelect?.options[serviceSelect.selectedIndex];
+  return opt?.value || '';
+}
+
+function updateDateField() {
+  if (!dateInput) return;
+  const type = getServiceType();
+  const today = new Date().toISOString().split('T')[0];
+
+  if (type === 'haircut') {
+    dateInput.min = nextSaturday();
+    dateInput.value = '';
+    if (dateHint) {
+      dateHint.textContent = 'Haircut appointments are Saturdays only. Walk-ins welcome Monday–Friday.';
+      dateHint.className = 'form-hint form-hint--info';
+    }
+  } else if (type === 'color') {
+    dateInput.min = today;
+    dateInput.value = '';
+    if (dateHint) {
+      dateHint.textContent = 'Color & styling appointments with Janette are available Monday–Saturday.';
+      dateHint.className = 'form-hint form-hint--info';
+    }
+  } else {
+    dateInput.min = today;
+    dateInput.value = '';
+    if (dateHint) {
+      dateHint.textContent = '';
+      dateHint.className = 'form-hint';
+    }
+  }
+}
+
+if (serviceSelect) {
+  serviceSelect.addEventListener('change', () => {
+    clearError('service');
+    updateDateField();
+    // Clear date if it no longer fits the selected service type
+    if (dateInput?.value) clearError('date');
+  });
+  updateDateField();
+}
+
+// Validate date against service type on change
 if (dateInput) {
-  dateInput.min = new Date().toISOString().split('T')[0];
+  dateInput.addEventListener('change', () => {
+    clearError('date');
+    const type = getServiceType();
+    if (type === 'haircut' && dateInput.value && !isSaturday(dateInput.value)) {
+      showError('date', 'Please choose a Saturday for haircut appointments.');
+    }
+  });
 }
 
 function showError(id, msg) {
@@ -62,7 +120,7 @@ function clearError(id) {
 }
 
 if (form) {
-  ['first-name', 'last-name', 'phone', 'service', 'date', 'time'].forEach(id => {
+  ['first-name', 'last-name', 'phone', 'date', 'time'].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener('input', () => clearError(id));
@@ -89,6 +147,13 @@ if (form) {
       else clearError(id);
     });
 
+    // Extra check: haircut must be Saturday
+    const type = getServiceType();
+    if (valid && type === 'haircut' && dateInput?.value && !isSaturday(dateInput.value)) {
+      showError('date', 'Please choose a Saturday for haircut appointments.');
+      valid = false;
+    }
+
     if (valid) {
       form.classList.add('hidden');
       formSuccess.classList.remove('hidden');
@@ -100,6 +165,8 @@ if (resetBtn) {
   resetBtn.addEventListener('click', () => {
     form.reset();
     ['first-name', 'last-name', 'phone', 'service', 'date', 'time'].forEach(clearError);
+    updateDateField();
+    if (dateHint) { dateHint.textContent = ''; dateHint.className = 'form-hint'; }
     formSuccess.classList.add('hidden');
     form.classList.remove('hidden');
   });

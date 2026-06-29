@@ -93,17 +93,30 @@
             <label for="service">Service <span class="req">*</span></label>
             <select id="service" required>
               <option value="">Select a service…</option>
-              <option>Men's Haircut – $20</option>
-              <option>Women's Buzz / Short Cut – $20</option>
-              <option>Kids' Haircut – $16</option>
-              <option>Senior Cut – $17</option>
-              <option>Fade – $25</option>
-              <option>Haircut + Beard Trim – $30</option>
-              <option>Beard Trim &amp; Line-up – $12</option>
-              <option>Straight Razor Shave – $25</option>
-              <option>Head Shave – $20</option>
+              <optgroup label="Haircuts &amp; Shaves (Saturday only · with Crystal)">
+                <option value="haircut">Men's Haircut – $20</option>
+                <option value="haircut">Women's Buzz / Short Cut – $20</option>
+                <option value="haircut">Kids' Haircut – $16</option>
+                <option value="haircut">Senior Cut – $17</option>
+                <option value="haircut">Fade – $25</option>
+                <option value="haircut">Haircut + Beard Trim – $30</option>
+                <option value="haircut">Beard Trim &amp; Line-up – $12</option>
+                <option value="haircut">Straight Razor Shave – $25</option>
+                <option value="haircut">Head Shave – $20</option>
+              </optgroup>
+              <optgroup label="Color &amp; Styling (Mon–Sat · with Janette)">
+                <option value="color">Hair Color / Full Color</option>
+                <option value="color">Highlights / Balayage</option>
+                <option value="color">Root Touch-Up</option>
+                <option value="color">Toner / Gloss</option>
+                <option value="color">Color Correction</option>
+                <option value="color">Other Color Service</option>
+              </optgroup>
             </select>
             <span class="field-error" id="service-error"></span>
+          </div>
+          <div class="form-group" id="date-hint-wrap">
+            <p class="form-hint" id="date-hint"></p>
           </div>
           <div class="form-row">
             <div class="form-group">
