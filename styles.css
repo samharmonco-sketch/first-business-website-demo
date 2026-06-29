@@ -358,6 +358,17 @@ ul { list-style: none; }
 .form-hint--info { color: var(--gold); font-style: italic; }
 #date-hint-wrap:empty, #date-hint-wrap p:empty { display: none; }
 
+/* Flatpickr calendar theming */
+.flatpickr-calendar { font-family: var(--font-body); border: 1.5px solid var(--border); box-shadow: 0 4px 20px rgba(0,0,0,.08); border-radius: 6px; }
+.flatpickr-day.selected, .flatpickr-day.selected:hover { background: var(--warm-dark); border-color: var(--warm-dark); }
+.flatpickr-day:hover { background: var(--cream-dk); }
+.flatpickr-day.flatpickr-disabled, .flatpickr-day.flatpickr-disabled:hover { color: var(--border); background: transparent; cursor: not-allowed; text-decoration: line-through; }
+.flatpickr-months .flatpickr-month { background: var(--warm-dark); color: var(--cream); border-radius: 4px 4px 0 0; }
+.flatpickr-current-month, .flatpickr-monthDropdown-months { color: var(--cream); }
+.flatpickr-weekday { color: var(--text-muted); font-weight: 500; }
+.numInputWrapper span.arrowUp:after { border-bottom-color: var(--cream); }
+.numInputWrapper span.arrowDown:after { border-top-color: var(--cream); }
+
 .form-success {
   background: var(--cream); border: 1.5px solid var(--border);
   border-radius: var(--radius); padding: 4rem 2rem; text-align: center;

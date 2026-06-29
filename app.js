@@ -36,22 +36,13 @@ const serviceSelect = document.getElementById('service');
 const dateInput = document.getElementById('date');
 const dateHint = document.getElementById('date-hint');
 
-function dayOfWeek(dateStr) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(y, m - 1, d).getDay(); // 0=Sun,6=Sat
-}
-function isSaturday(dateStr) { return dayOfWeek(dateStr) === 6; }
-function isSunday(dateStr)   { return dayOfWeek(dateStr) === 0; }
+let datePicker = null; // flatpickr instance
 
-function nextSaturday() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  const diff = (6 - d.getDay() + 7) % 7 || 7;
-  d.setDate(d.getDate() + diff);
-  return d.toISOString().split('T')[0];
+function getServiceType() {
+  const opt = serviceSelect?.options[serviceSelect.selectedIndex];
+  return opt?.value || '';
 }
 
-// Populate time select based on day of week.
 // Sat & Tue close at 3PM (last slot 2:30PM). Mon/Wed/Thu/Fri close at 6PM (last slot 5:30PM).
 function buildTimeOptions(dow) {
   const timeSelect = document.getElementById('time');
@@ -59,7 +50,6 @@ function buildTimeOptions(dow) {
   const prev = timeSelect.value;
   timeSelect.innerHTML = '<option value="">Select a time…</option>';
 
-  // dow: 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
   const earlyClose = (dow === 2 || dow === 6); // Tue or Sat
   const [startH, endH, endM] = earlyClose ? [9, 14, 30] : [9, 17, 30];
 
@@ -84,71 +74,61 @@ function buildTimeOptions(dow) {
   if (prev && timeSelect.value !== prev) timeSelect.value = '';
 }
 
-function getServiceType() {
-  const opt = serviceSelect?.options[serviceSelect.selectedIndex];
-  return opt?.value || '';
-}
+function initDatePicker(type) {
+  if (!dateInput || typeof flatpickr === 'undefined') return;
 
-function updateDateField() {
-  if (!dateInput) return;
-  const type = getServiceType();
-  const today = new Date().toISOString().split('T')[0];
+  // Destroy existing instance before reinitialising
+  if (datePicker) { datePicker.destroy(); datePicker = null; }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let disableFn, minDate, defaultDate;
 
   if (type === 'haircut') {
-    dateInput.min = nextSaturday();
-    dateInput.value = '';
+    // Only Saturdays selectable
+    disableFn = date => date.getDay() !== 6;
+    // Start at next Saturday
+    const next = new Date(today);
+    const diff = (6 - next.getDay() + 7) % 7 || 7;
+    next.setDate(next.getDate() + diff);
+    minDate = next;
+    defaultDate = null;
     if (dateHint) {
       dateHint.textContent = 'Haircut appointments are Saturdays only. Walk-ins welcome Monday–Friday.';
       dateHint.className = 'form-hint form-hint--info';
     }
   } else if (type === 'color') {
-    dateInput.min = today;
-    dateInput.value = '';
+    // Sunday disabled (closed); all other days open
+    disableFn = date => date.getDay() === 0;
+    minDate = today;
+    defaultDate = null;
     if (dateHint) {
       dateHint.textContent = 'Color & styling appointments with Janette are available Monday–Saturday.';
       dateHint.className = 'form-hint form-hint--info';
     }
   } else {
-    dateInput.min = today;
-    dateInput.value = '';
-    if (dateHint) {
-      dateHint.textContent = '';
-      dateHint.className = 'form-hint';
-    }
+    // No service chosen yet — show full calendar, validate on submit
+    disableFn = date => date.getDay() === 0;
+    minDate = today;
+    if (dateHint) { dateHint.textContent = ''; dateHint.className = 'form-hint'; }
   }
-}
 
-if (serviceSelect) {
-  serviceSelect.addEventListener('change', () => {
-    clearError('service');
-    updateDateField();
-    if (dateInput?.value) clearError('date');
-    // Haircuts are always Saturday, so set Saturday time slots immediately
-    buildTimeOptions(getServiceType() === 'haircut' ? 6 : (dateInput?.value ? dayOfWeek(dateInput.value) : 1));
+  datePicker = flatpickr(dateInput, {
+    minDate,
+    disable: [disableFn],
+    dateFormat: 'Y-m-d',
+    disableMobile: false,
+    onChange(selectedDates) {
+      if (!selectedDates.length) return;
+      clearError('date');
+      buildTimeOptions(selectedDates[0].getDay());
+    },
   });
-  updateDateField();
-}
 
-// Validate date and rebuild time slots when date changes
-if (dateInput) {
-  dateInput.addEventListener('change', () => {
-    clearError('date');
-    const type = getServiceType();
-    const val  = dateInput.value;
-    if (!val) return;
-    if (isSunday(val)) {
-      showError('date', 'We are closed on Sundays. Please choose another day.');
-      dateInput.value = '';
-      return;
-    }
-    if (type === 'haircut' && !isSaturday(val)) {
-      showError('date', 'Please choose a Saturday for haircut appointments.');
-      return;
-    }
-    buildTimeOptions(dayOfWeek(val));
-  });
-  // Default time slots (Monday)
-  buildTimeOptions(1);
+  // Clear any previously selected date when service type changes
+  datePicker.clear();
+  buildTimeOptions(type === 'haircut' ? 6 : 1);
 }
 
 function showError(id, msg) {
@@ -164,8 +144,17 @@ function clearError(id) {
   if (inp) inp.classList.remove('error');
 }
 
+if (serviceSelect) {
+  serviceSelect.addEventListener('change', () => {
+    clearError('service');
+    initDatePicker(getServiceType());
+  });
+  // Initialise with no service selected
+  initDatePicker('');
+}
+
 if (form) {
-  ['first-name', 'last-name', 'phone', 'date', 'time'].forEach(id => {
+  ['first-name', 'last-name', 'phone', 'time'].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener('input', () => clearError(id));
@@ -192,13 +181,6 @@ if (form) {
       else clearError(id);
     });
 
-    // Extra check: haircut must be Saturday
-    const type = getServiceType();
-    if (valid && type === 'haircut' && dateInput?.value && !isSaturday(dateInput.value)) {
-      showError('date', 'Please choose a Saturday for haircut appointments.');
-      valid = false;
-    }
-
     if (valid) {
       form.classList.add('hidden');
       formSuccess.classList.remove('hidden');
@@ -210,8 +192,8 @@ if (resetBtn) {
   resetBtn.addEventListener('click', () => {
     form.reset();
     ['first-name', 'last-name', 'phone', 'service', 'date', 'time'].forEach(clearError);
-    updateDateField();
     if (dateHint) { dateHint.textContent = ''; dateHint.className = 'form-hint'; }
+    initDatePicker('');
     formSuccess.classList.add('hidden');
     form.classList.remove('hidden');
   });
