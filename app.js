@@ -36,19 +36,50 @@ const serviceSelect = document.getElementById('service');
 const dateInput = document.getElementById('date');
 const dateHint = document.getElementById('date-hint');
 
-// Returns true if a date string (YYYY-MM-DD) falls on a Saturday
-function isSaturday(dateStr) {
+function dayOfWeek(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(y, m - 1, d).getDay() === 6;
+  return new Date(y, m - 1, d).getDay(); // 0=Sun,6=Sat
 }
+function isSaturday(dateStr) { return dayOfWeek(dateStr) === 6; }
+function isSunday(dateStr)   { return dayOfWeek(dateStr) === 0; }
 
-// Next upcoming Saturday from today
 function nextSaturday() {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   const diff = (6 - d.getDay() + 7) % 7 || 7;
   d.setDate(d.getDate() + diff);
   return d.toISOString().split('T')[0];
+}
+
+// Populate time select. Saturday: 8AM open, last slot 4:30PM (closes 5PM).
+// Weekdays: 9AM open, last slot 6:30PM (closes 7PM).
+function buildTimeOptions(isSat) {
+  const timeSelect = document.getElementById('time');
+  if (!timeSelect) return;
+  const prev = timeSelect.value;
+  timeSelect.innerHTML = '<option value="">Select a time…</option>';
+
+  // Each slot is [hour24, minute]
+  const slots = [];
+  const [startH, endH, endM] = isSat ? [8, 16, 30] : [9, 18, 30];
+  for (let h = startH; h <= endH; h++) {
+    for (const m of [0, 30]) {
+      if (h === endH && m > endM) break;
+      slots.push([h, m]);
+    }
+  }
+
+  slots.forEach(([h, m]) => {
+    const hour12 = h % 12 || 12;
+    const ampm   = h < 12 ? 'AM' : 'PM';
+    const label  = `${hour12}:${m === 0 ? '00' : '30'} ${ampm}`;
+    const opt = document.createElement('option');
+    opt.textContent = label;
+    if (label === prev) opt.selected = true;
+    timeSelect.appendChild(opt);
+  });
+
+  if (prev && timeSelect.value !== prev) timeSelect.value = '';
 }
 
 function getServiceType() {
@@ -89,21 +120,33 @@ if (serviceSelect) {
   serviceSelect.addEventListener('change', () => {
     clearError('service');
     updateDateField();
-    // Clear date if it no longer fits the selected service type
     if (dateInput?.value) clearError('date');
+    // Haircuts are always Saturday, so set Saturday time slots immediately
+    buildTimeOptions(getServiceType() === 'haircut');
   });
   updateDateField();
 }
 
-// Validate date against service type on change
+// Validate date and rebuild time slots when date changes
 if (dateInput) {
   dateInput.addEventListener('change', () => {
     clearError('date');
     const type = getServiceType();
-    if (type === 'haircut' && dateInput.value && !isSaturday(dateInput.value)) {
-      showError('date', 'Please choose a Saturday for haircut appointments.');
+    const val  = dateInput.value;
+    if (!val) return;
+    if (isSunday(val)) {
+      showError('date', 'We are closed on Sundays. Please choose another day.');
+      dateInput.value = '';
+      return;
     }
+    if (type === 'haircut' && !isSaturday(val)) {
+      showError('date', 'Please choose a Saturday for haircut appointments.');
+      return;
+    }
+    buildTimeOptions(isSaturday(val));
   });
+  // Default time slots (weekday)
+  buildTimeOptions(false);
 }
 
 function showError(id, msg) {
