@@ -114,8 +114,11 @@ ul { list-style: none; }
   display: flex; flex-direction: column; justify-content: center;
   padding: 10rem 2.5rem 4rem;
   position: relative;
-  /* Subtle noise texture feel via radial gradient */
-  background-image: radial-gradient(ellipse at 20% 50%, #4a3020 0%, #2e1f14 60%, #180f08 100%);
+  background-image:
+    linear-gradient(to right, rgba(46,31,20,.92) 0%, rgba(46,31,20,.75) 55%, rgba(46,31,20,.5) 100%),
+    url('https://streetviewpixels-pa.googleapis.com/v1/thumbnail?cb_client=maps_sv.tactile&w=1600&h=900&pitch=4.19&panoid=m2O3Vbopygu0Ox2KsqYe9A&yaw=240.27');
+  background-size: cover;
+  background-position: center;
 }
 .hero::after {
   content: '';
@@ -264,7 +267,11 @@ ul { list-style: none; }
 /* ===== Page header ===== */
 .page-header {
   padding: 10rem 0 5rem;
-  background-image: radial-gradient(ellipse at 20% 50%, #4a3020 0%, #2e1f14 60%, #180f08 100%);
+  background-image:
+    linear-gradient(to right, rgba(46,31,20,.92) 0%, rgba(46,31,20,.78) 60%, rgba(46,31,20,.6) 100%),
+    url('https://streetviewpixels-pa.googleapis.com/v1/thumbnail?cb_client=maps_sv.tactile&w=1600&h=900&pitch=4.19&panoid=m2O3Vbopygu0Ox2KsqYe9A&yaw=240.27');
+  background-size: cover;
+  background-position: center;
   border-bottom: 1px solid rgba(176,92,48,.2);
 }
 .page-header h1 { font-size: clamp(2rem, 5vw, 3.5rem); color: var(--cream); margin-bottom: 1rem; }
