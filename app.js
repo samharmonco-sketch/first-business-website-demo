@@ -51,17 +51,19 @@ function nextSaturday() {
   return d.toISOString().split('T')[0];
 }
 
-// Populate time select. Saturday: 8AM open, last slot 4:30PM (closes 5PM).
-// Weekdays: 9AM open, last slot 6:30PM (closes 7PM).
-function buildTimeOptions(isSat) {
+// Populate time select based on day of week.
+// Sat & Tue close at 3PM (last slot 2:30PM). Mon/Wed/Thu/Fri close at 6PM (last slot 5:30PM).
+function buildTimeOptions(dow) {
   const timeSelect = document.getElementById('time');
   if (!timeSelect) return;
   const prev = timeSelect.value;
   timeSelect.innerHTML = '<option value="">Select a time…</option>';
 
-  // Each slot is [hour24, minute]
+  // dow: 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
+  const earlyClose = (dow === 2 || dow === 6); // Tue or Sat
+  const [startH, endH, endM] = earlyClose ? [9, 14, 30] : [9, 17, 30];
+
   const slots = [];
-  const [startH, endH, endM] = isSat ? [8, 16, 30] : [9, 18, 30];
   for (let h = startH; h <= endH; h++) {
     for (const m of [0, 30]) {
       if (h === endH && m > endM) break;
@@ -122,7 +124,7 @@ if (serviceSelect) {
     updateDateField();
     if (dateInput?.value) clearError('date');
     // Haircuts are always Saturday, so set Saturday time slots immediately
-    buildTimeOptions(getServiceType() === 'haircut');
+    buildTimeOptions(getServiceType() === 'haircut' ? 6 : (dateInput?.value ? dayOfWeek(dateInput.value) : 1));
   });
   updateDateField();
 }
@@ -143,10 +145,10 @@ if (dateInput) {
       showError('date', 'Please choose a Saturday for haircut appointments.');
       return;
     }
-    buildTimeOptions(isSaturday(val));
+    buildTimeOptions(dayOfWeek(val));
   });
-  // Default time slots (weekday)
-  buildTimeOptions(false);
+  // Default time slots (Monday)
+  buildTimeOptions(1);
 }
 
 function showError(id, msg) {
