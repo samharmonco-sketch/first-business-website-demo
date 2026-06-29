@@ -6,13 +6,13 @@
   <title>Services – The Barbershop</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
   <nav class="navbar" id="navbar">
-    <a href="index.html" class="nav-brand">THE BARBERSHOP</a>
+    <a href="index.html" class="nav-brand">The Barbershop</a>
     <ul class="nav-links">
       <li><a href="index.html">Home</a></li>
       <li><a href="services.html" class="active">Services</a></li>
@@ -23,132 +23,117 @@
     </button>
   </nav>
 
-  <header class="page-hero page-hero-gradient">
-    <div class="page-hero-overlay"></div>
-    <div class="page-hero-content">
-      <p class="eyebrow">Services &amp; Pricing</p>
-      <h1>Services for Everyone.<br>Priced Fairly.</h1>
+  <header class="page-header">
+    <div class="container">
+      <p class="section-label">Services &amp; Pricing</p>
+      <h1>Straightforward prices.<br><em>No surprises.</em></h1>
+      <p class="page-header-sub">Walk-ins welcome Monday–Friday. <strong>Saturday by appointment only.</strong></p>
     </div>
   </header>
 
   <main class="container services-page">
 
-    <div class="services-intro">
-      <p>Every service is performed by skilled stylists who take the time to understand exactly what you want. Walk-ins welcome Monday–Friday. <strong>Saturday is by appointment only</strong> — <a href="contact.html">book ahead</a> to guarantee your spot.</p>
-    </div>
-
-    <div class="services-layout">
-
-      <section class="service-block">
-        <div class="service-block-header">
-          <h2>Haircuts</h2>
+    <section class="price-section">
+      <h2 class="price-section-title">Haircuts</h2>
+      <div class="price-list">
+        <div class="price-row">
+          <div class="price-info">
+            <h3>Men's Haircut</h3>
+            <p>Scissor or clipper cut, styled to your preference</p>
+          </div>
+          <span class="price">$20</span>
         </div>
-        <div class="price-list">
-          <div class="price-row">
-            <div>
-              <h3>Men's Haircut</h3>
-              <p>Scissor or clipper cut, styled to your preference</p>
-            </div>
-            <span>$20</span>
+        <div class="price-row">
+          <div class="price-info">
+            <h3>Women's Buzz / Short Cut</h3>
+            <p>No upcharge — same fair price as everyone else</p>
           </div>
-          <div class="price-row">
-            <div>
-              <h3>Kids' Haircut</h3>
-              <p>Ages 12 and under</p>
-            </div>
-            <span>$16</span>
-          </div>
-          <div class="price-row">
-            <div>
-              <h3>Women's Buzz / Short Cut</h3>
-              <p>No ridiculous upcharges — same fair price</p>
-            </div>
-            <span>$20</span>
-          </div>
-          <div class="price-row">
-            <div>
-              <h3>Senior Cut</h3>
-              <p>For clients 65+</p>
-            </div>
-            <span>$17</span>
-          </div>
-          <div class="price-row">
-            <div>
-              <h3>Fade</h3>
-              <p>High, mid, or low fade — clean lines guaranteed</p>
-            </div>
-            <span>$25</span>
-          </div>
-          <div class="price-row highlight">
-            <div>
-              <h3>Haircut + Beard Trim</h3>
-              <p>The full look — haircut with beard shaping and line-up</p>
-            </div>
-            <span>$30</span>
-          </div>
+          <span class="price">$20</span>
         </div>
-      </section>
+        <div class="price-row">
+          <div class="price-info">
+            <h3>Fade</h3>
+            <p>High, mid, or low fade — clean lines guaranteed</p>
+          </div>
+          <span class="price">$25</span>
+        </div>
+        <div class="price-row">
+          <div class="price-info">
+            <h3>Kids' Haircut</h3>
+            <p>Ages 12 and under</p>
+          </div>
+          <span class="price">$16</span>
+        </div>
+        <div class="price-row">
+          <div class="price-info">
+            <h3>Senior Cut</h3>
+            <p>For clients 65+</p>
+          </div>
+          <span class="price">$17</span>
+        </div>
+        <div class="price-row highlight-row">
+          <div class="price-info">
+            <h3>Haircut + Beard Trim</h3>
+            <p>Full cut with beard shaping and line-up</p>
+          </div>
+          <span class="price">$30</span>
+        </div>
+      </div>
+    </section>
 
-      <section class="service-block">
-        <div class="service-block-header">
-          <h2>Beard &amp; Shave</h2>
+    <section class="price-section">
+      <h2 class="price-section-title">Beard &amp; Shave</h2>
+      <div class="price-list">
+        <div class="price-row">
+          <div class="price-info">
+            <h3>Beard Trim &amp; Line-up</h3>
+            <p>Shape and clean up your beard</p>
+          </div>
+          <span class="price">$12</span>
         </div>
-        <div class="price-list">
-          <div class="price-row">
-            <div>
-              <h3>Beard Trim &amp; Line-up</h3>
-              <p>Shape and clean up your beard</p>
-            </div>
-            <span>$12</span>
+        <div class="price-row">
+          <div class="price-info">
+            <h3>Straight Razor Shave</h3>
+            <p>Hot towel, straight razor, aftershave</p>
           </div>
-          <div class="price-row">
-            <div>
-              <h3>Straight Razor Shave</h3>
-              <p>Hot towel, straight razor, aftershave — the classic experience</p>
-            </div>
-            <span>$25</span>
-          </div>
-          <div class="price-row">
-            <div>
-              <h3>Head Shave</h3>
-              <p>Clean clipper or razor head shave</p>
-            </div>
-            <span>$20</span>
-          </div>
+          <span class="price">$25</span>
         </div>
-      </section>
+        <div class="price-row">
+          <div class="price-info">
+            <h3>Head Shave</h3>
+            <p>Clean clipper or razor head shave</p>
+          </div>
+          <span class="price">$20</span>
+        </div>
+      </div>
+    </section>
 
-      <section class="service-block">
-        <div class="service-block-header">
-          <h2>Add-ons</h2>
-        </div>
-        <div class="price-list">
-          <div class="price-row">
-            <div>
-              <h3>Hot Towel Treatment</h3>
-              <p>Relaxing hot towel wrap — pairs with any service</p>
-            </div>
-            <span>+$5</span>
+    <section class="price-section">
+      <h2 class="price-section-title">Add-ons</h2>
+      <div class="price-list">
+        <div class="price-row">
+          <div class="price-info">
+            <h3>Hot Towel Treatment</h3>
+            <p>Pairs with any service</p>
           </div>
-          <div class="price-row">
-            <div>
-              <h3>Line-up / Edge Up</h3>
-              <p>Clean up hairline, sideburns, and neckline</p>
-            </div>
-            <span>+$5</span>
-          </div>
+          <span class="price">+$5</span>
         </div>
-      </section>
+        <div class="price-row">
+          <div class="price-info">
+            <h3>Line-up / Edge Up</h3>
+            <p>Hairline, sideburns, and neckline</p>
+          </div>
+          <span class="price">+$5</span>
+        </div>
+      </div>
+    </section>
 
-    </div>
-
-    <div class="services-cta-block">
-      <div class="services-cta-graphic">✂</div>
-      <div class="services-cta-text">
-        <h3>Ready to Book?</h3>
-        <p>Walk-ins welcome Monday–Friday. Saturday is by appointment only — request a time below and we'll hold your spot.</p>
-        <a href="contact.html" class="btn btn-gold">Book an Appointment</a>
-        <a href="tel:+16302870775" class="phone-link">(630) 287-0775</a>
+    <div class="services-book-cta">
+      <h3>Ready to come in?</h3>
+      <p>Walk-ins welcome Monday through Friday. Saturday is by appointment only — book a time and we'll confirm by phone.</p>
+      <div class="services-cta-actions">
+        <a href="contact.html" class="btn btn-primary">Book an Appointment</a>
+        <a href="tel:+16302870775" class="btn btn-secondary">(630) 287-0775</a>
       </div>
     </div>
 
@@ -156,18 +141,14 @@
 
   <footer class="footer">
     <div class="container footer-inner">
-      <div>
-        <p class="footer-brand">THE BARBERSHOP</p>
-        <p>128 S Cass Ave, Westmont, IL 60559</p>
-      </div>
+      <p class="footer-name">The Barbershop</p>
+      <p>128 S Cass Ave · Westmont, IL 60559 · <a href="tel:+16302870775">(630) 287-0775</a></p>
       <nav class="footer-nav">
         <a href="index.html">Home</a>
         <a href="services.html">Services</a>
         <a href="contact.html">Book Now</a>
       </nav>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2026 The Barbershop · Westmont, IL</p>
+      <p class="footer-copy">&copy; 2026 The Barbershop</p>
     </div>
   </footer>
 

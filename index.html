@@ -6,13 +6,13 @@
   <title>The Barbershop – Westmont, IL</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
   <nav class="navbar" id="navbar">
-    <a href="index.html" class="nav-brand">THE BARBERSHOP</a>
+    <a href="index.html" class="nav-brand">The Barbershop</a>
     <ul class="nav-links">
       <li><a href="index.html" class="active">Home</a></li>
       <li><a href="services.html">Services</a></li>
@@ -25,333 +25,291 @@
 
   <!-- Hero -->
   <section class="hero">
-    <div class="hero-bg hero-bg-gradient"></div>
-    <div class="hero-overlay"></div>
-    <div class="hero-content">
-      <p class="hero-eyebrow">Westmont, Illinois</p>
-      <h1>Great Hair for<br>Everyone</h1>
-      <p class="hero-sub">Men, women, and kids welcome. Expert stylists, honest prices, and a chair you'll want to come back to.</p>
+    <div class="hero-inner">
+      <div class="hero-label">Westmont, Illinois · Est. on S. Cass Ave</div>
+      <h1 class="hero-heading">
+        Great hair.<br>
+        <em>Honest prices.</em><br>
+        Everyone welcome.
+      </h1>
+      <div class="hero-divider"></div>
+      <p class="hero-sub">Crystal and Janette have been cutting hair for men, women, and kids in Westmont for years. No attitude, no upcharges, no surprises.</p>
       <div class="hero-actions">
-        <a href="contact.html" class="btn btn-gold">Book an Appointment</a>
-        <a href="services.html" class="btn btn-ghost">View Services</a>
-      </div>
-      <div class="hero-rating">
-        <span class="stars">★★★★★</span>
-        <span class="rating-text">4.9 · 80 Google Reviews</span>
+        <a href="contact.html" class="btn btn-primary">Book an Appointment</a>
+        <a href="services.html" class="btn btn-secondary">See Pricing</a>
       </div>
     </div>
-    <a href="#about" class="scroll-hint">
-      <span>Scroll</span>
-      <svg width="16" height="24" viewBox="0 0 16 24"><path d="M8 0v20M1 13l7 7 7-7" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </a>
+    <div class="hero-rating-bar">
+      <span class="stars">★★★★★</span>
+      <span>4.9 out of 5 · 80 Google Reviews · Westmont, IL</span>
+    </div>
   </section>
 
-  <!-- About strip -->
-  <section class="about-strip" id="about">
-    <div class="container about-grid">
-      <div class="about-graphic">
-        <div class="about-graphic-inner">
-          <span class="about-graphic-scissors">✂</span>
-          <div class="about-graphic-line"></div>
-          <p class="about-graphic-tagline">Est. in Westmont, IL</p>
-        </div>
+  <!-- About -->
+  <section class="about" id="about">
+    <div class="container about-layout">
+      <div class="about-left">
+        <p class="section-label">About the Shop</p>
+        <h2>A neighborhood spot that people drive across the suburbs for.</h2>
       </div>
-      <div class="about-text">
-        <p class="eyebrow">About Us</p>
-        <h2>Your Neighborhood Hair Studio</h2>
-        <p>The Barbershop is Westmont's go-to spot for men, women, and kids — run by two talented stylists who genuinely love what they do. No gimmicks, no upcharges, no pretense. Just great haircuts at prices that make sense.</p>
-        <p>Crystal and Janette have built a loyal following across the western suburbs. Clients drive 45 minutes. Kids grow up here. People who've moved away still come back.</p>
+      <div class="about-right">
+        <p>The Barbershop on S. Cass Ave is the kind of place Westmont is lucky to have. Small, clean, friendly — run by two stylists who genuinely care about the work. Crystal and Janette take their time, listen to what you want, and deliver every single time.</p>
+        <p>Men's cuts, women's cuts, kids' cuts, fades, buzz cuts, beard trims, straight razor shaves. All at prices that haven't forgotten what a haircut should cost.</p>
         <div class="about-stats">
-          <div class="stat"><span class="stat-num">4.9</span><span class="stat-label">Star Rating</span></div>
-          <div class="stat"><span class="stat-num">80+</span><span class="stat-label">Reviews</span></div>
-          <div class="stat"><span class="stat-num">6+</span><span class="stat-label">Years Serving Westmont</span></div>
+          <div class="stat">
+            <span class="stat-num">4.9</span>
+            <span class="stat-label">Star rating on Google</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num">80+</span>
+            <span class="stat-label">Five-star reviews</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num">$16</span>
+            <span class="stat-label">Starts at</span>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Services preview -->
-  <section class="services-preview">
+  <!-- Divider quote -->
+  <div class="pull-quote">
     <div class="container">
-      <p class="eyebrow center">What We Offer</p>
-      <h2 class="section-title">For Everyone,<br>Done Right</h2>
-      <div class="services-cards">
-        <div class="service-card">
-          <div class="service-card-icon">✂</div>
-          <div class="service-card-body">
-            <h3>Women's Cuts</h3>
-            <p>Short cuts, buzzes, styles, and color. No salon-style upcharges — ever.</p>
-            <span class="service-from">From $20</span>
-          </div>
-        </div>
-        <div class="service-card">
-          <div class="service-card-icon">💈</div>
-          <div class="service-card-body">
-            <h3>Men's Cuts &amp; Fades</h3>
-            <p>Scissor cuts, clipper cuts, fades, and beard trims. Always clean, always sharp.</p>
-            <span class="service-from">From $20</span>
-          </div>
-        </div>
-        <div class="service-card">
-          <div class="service-card-icon">⭐</div>
-          <div class="service-card-body">
-            <h3>Kids' Cuts</h3>
-            <p>Friendly, patient, and great with kids of all ages. Parents love us for it.</p>
-            <span class="service-from">From $16</span>
-          </div>
-        </div>
-      </div>
-      <div class="center-cta">
-        <a href="services.html" class="btn btn-dark">See Full Pricing</a>
-      </div>
+      <blockquote>"Crystal is the absolute best. She takes all the pictures I bring in and cuts my hair in a way that takes my idea and makes it work. I haven't seen anybody else in 10 years and have zero intention of changing."</blockquote>
+      <cite>— James Z., Google Local Guide</cite>
     </div>
-  </section>
+  </div>
 
-  <!-- Quote strip -->
-  <section class="quote-strip">
-    <div class="container quote-strip-inner">
-      <div class="quote-mark">"</div>
-      <blockquote>Crystal can read your mind and cuts your hair the way you picture it. So you won't ever have that hide-the-pain feeling.</blockquote>
-      <cite>— Google Review</cite>
+  <!-- Services -->
+  <section class="services-strip">
+    <div class="container services-strip-layout">
+      <div class="services-strip-left">
+        <p class="section-label">What We Do</p>
+        <h2>For everyone.<br>Done right.</h2>
+        <a href="services.html" class="btn btn-primary" style="margin-top:2rem;">Full Pricing</a>
+      </div>
+      <div class="services-strip-right">
+        <div class="service-row">
+          <div class="service-row-name">
+            <h3>Women's Cuts</h3>
+            <p>Short cuts, buzzes, and styles — no upcharges</p>
+          </div>
+          <span class="service-row-price">From $20</span>
+        </div>
+        <div class="service-row">
+          <div class="service-row-name">
+            <h3>Men's Cuts &amp; Fades</h3>
+            <p>Scissor cuts, clipper cuts, high &amp; low fades</p>
+          </div>
+          <span class="service-row-price">From $20</span>
+        </div>
+        <div class="service-row">
+          <div class="service-row-name">
+            <h3>Kids' Cuts</h3>
+            <p>Patient, friendly, and great with kids of all ages</p>
+          </div>
+          <span class="service-row-price">From $16</span>
+        </div>
+        <div class="service-row">
+          <div class="service-row-name">
+            <h3>Beard Trims &amp; Shaves</h3>
+            <p>Line-ups, trims, and straight razor shaves</p>
+          </div>
+          <span class="service-row-price">From $12</span>
+        </div>
+      </div>
     </div>
   </section>
 
   <!-- Reviews -->
   <section class="reviews-section">
     <div class="container">
-      <p class="eyebrow center">Google Reviews</p>
-      <h2 class="section-title">What Our Clients Say</h2>
-      <div class="reviews-masonry" id="reviews-container">
+      <div class="reviews-header">
+        <div>
+          <p class="section-label">Google Reviews</p>
+          <h2>What people are saying</h2>
+        </div>
+        <div class="rating-block">
+          <span class="rating-big">4.9</span>
+          <div>
+            <div class="stars-row">★★★★★</div>
+            <span class="rating-sub">80 reviews</span>
+          </div>
+        </div>
+      </div>
 
-        <div class="review-item featured">
+      <div class="reviews-grid">
+        <div class="review-card featured-review">
           <div class="review-stars">★★★★★</div>
           <p>"Crystal is the absolute best! She takes all the pictures I bring in and cuts my hair in a way that takes my idea and makes it work! I haven't seen anybody else in 10 years and have 0 intention of changing! Best cut and best prices around!"</p>
           <cite>James Z. · Local Guide</cite>
         </div>
-        <div class="review-item">
+        <div class="review-card">
           <div class="review-stars">★★★★★</div>
           <p>"Best experience I've ever had getting my hair cut. Very friendly staff, very good prices and an overall great experience!"</p>
           <cite>Dominick A. · Local Guide</cite>
         </div>
-        <div class="review-item">
+        <div class="review-card">
           <div class="review-stars">★★★★★</div>
           <p>"I now drive about 45 minutes each way to have Crystal cut my hair."</p>
           <cite>Jeffery N. · Local Guide</cite>
         </div>
-        <div class="review-item">
+        <div class="review-card">
           <div class="review-stars">★★★★★</div>
           <p>"Quick, cheap, no ridiculous upcharge for my wife's buzzes, and everyone is friendly."</p>
           <cite>Andrew A. · Local Guide</cite>
         </div>
-        <div class="review-item">
-          <div class="review-stars">★★★★★</div>
-          <p>"Great small neighborhood Barbershop that is reasonably priced. Crystal did an amazing job on my hair. I couldn't be happier that I found a new Barbershop that anticipates and listens to the customers needs."</p>
-          <cite>Scott L. · Local Guide</cite>
-        </div>
-        <div class="review-item">
-          <div class="review-stars">★★★★★</div>
-          <p>"Crystal is attentive and does a great job at a reasonable price. She does not forget a face. Pleased to have found someone to return to."</p>
-          <cite>Brian J. · Local Guide</cite>
-        </div>
-        <div class="review-item">
+        <div class="review-card">
           <div class="review-stars">★★★★★</div>
           <p>"Crystal can read your mind and cuts your hair the way you picture it. So you won't ever have that hide-the-pain feeling."</p>
           <cite>Anonymous Person · Local Guide</cite>
         </div>
-        <div class="review-item">
+        <div class="review-card">
           <div class="review-stars">★★★★★</div>
-          <p>"My husband and my 8 year old son have both been going here for a couple of months. The haircuts are top notch and the prices can't be beat! She is very good with kids."</p>
+          <p>"Great small neighborhood barbershop that is reasonably priced. Crystal did an amazing job — anticipates and listens to what you need."</p>
+          <cite>Scott L. · Local Guide</cite>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <p>"My husband and 8-year-old son have both been going here for months. Haircuts are top notch and the prices can't be beat. She is very good with kids."</p>
           <cite>Allison C.</cite>
         </div>
-        <div class="review-item">
+        <div class="review-card">
           <div class="review-stars">★★★★★</div>
-          <p>"Great experience! Very pleasant owner and stylist. Easy to chat with and very friendly. Fast and excellent quality haircut."</p>
-          <cite>Steven Q. · Local Guide</cite>
-        </div>
-        <div class="review-item">
-          <div class="review-stars">★★★★★</div>
-          <p>"This local barbershop has the old-school local, neighborhood feel. I started getting my haircuts here 5 years ago, and now I won't let anyone else near me with scissors."</p>
+          <p>"This local barbershop has the old-school neighborhood feel. I started coming 5 years ago and now I won't let anyone else near me with scissors."</p>
           <cite>Mansoor B. · Local Guide</cite>
         </div>
-        <div class="review-item hidden-review">
-          <div class="review-stars">★★★★★</div>
-          <p>"Love this location. It's small but clean and Crystal and Janette are amazing. Lots of parking options. Men's haircuts are walk-in. Highly suggest Janette for colors and cuts!"</p>
-          <cite>Christina F. · Local Guide</cite>
-        </div>
-        <div class="review-item hidden-review">
-          <div class="review-stars">★★★★★</div>
-          <p>"It's the best place in town to get your hair cut for women and men. Friendly and courteous service. I've been going there for around 6 years now."</p>
-          <cite>Tobias Z.</cite>
-        </div>
-        <div class="review-item hidden-review">
+        <div class="review-card">
           <div class="review-stars">★★★★★</div>
           <p>"Best barber I have been to in Illinois. Crystal is very personable and extremely competent and quick. Only place I go to anymore."</p>
           <cite>Brandon W. · Local Guide</cite>
         </div>
-        <div class="review-item hidden-review">
+        <div class="review-card">
           <div class="review-stars">★★★★★</div>
-          <p>"Krystal is very friendly and professional. I'm so glad to bring my kids with her and from now on we will be regulars!"</p>
+          <p>"Great experience! Very pleasant owner and stylist. Easy to chat with and very friendly. Fast and excellent quality haircut."</p>
+          <cite>Steven Q. · Local Guide</cite>
+        </div>
+
+        <!-- Hidden reviews -->
+        <div class="review-card hidden-review">
+          <div class="review-stars">★★★★★</div>
+          <p>"Love this location. It's small but clean and Crystal and Janette are amazing. Lots of parking options. Highly suggest Janette for colors and cuts!"</p>
+          <cite>Christina F. · Local Guide</cite>
+        </div>
+        <div class="review-card hidden-review">
+          <div class="review-stars">★★★★★</div>
+          <p>"Best place in town for women and men. Friendly and courteous service. I've been going there for around 6 years now."</p>
+          <cite>Tobias Z.</cite>
+        </div>
+        <div class="review-card hidden-review">
+          <div class="review-stars">★★★★★</div>
+          <p>"Krystal is very friendly and professional. I'm so glad to bring my kids with her — from now on we will be regulars!"</p>
           <cite>Gabriel C. · Local Guide</cite>
         </div>
-        <div class="review-item hidden-review">
+        <div class="review-card hidden-review">
           <div class="review-stars">★★★★★</div>
-          <p>"Very clean environment. The owner was very nice towards the customers. Overall a very professional establishment. Can't wait to go back."</p>
+          <p>"Very clean environment. The owner was very nice. Overall a very professional establishment. Can't wait to go back."</p>
           <cite>MOOGY</cite>
         </div>
-        <div class="review-item hidden-review">
+        <div class="review-card hidden-review">
           <div class="review-stars">★★★★★</div>
-          <p>"I have been getting my haircut here for several years. I have always received a great haircut here, never been disappointed. The prices are very reasonable."</p>
+          <p>"I have been getting my haircut here for several years and have never been disappointed. The prices are very reasonable."</p>
           <cite>Robert B. · Local Guide</cite>
         </div>
-        <div class="review-item hidden-review">
+        <div class="review-card hidden-review">
           <div class="review-stars">★★★★★</div>
-          <p>"Found a new favorite barber... No head trips, just great hair cuts!"</p>
+          <p>"Found a new favorite barber. No head trips, just great hair cuts!"</p>
           <cite>Tom W. · Local Guide</cite>
         </div>
-        <div class="review-item hidden-review">
-          <div class="review-stars">★★★★★</div>
-          <p>"I've been here time &amp; time again, she does a great job, her place is warm and welcoming."</p>
-          <cite>Rebecca A.</cite>
-        </div>
-        <div class="review-item hidden-review">
+        <div class="review-card hidden-review">
           <div class="review-stars">★★★★★</div>
           <p>"Crystal is the best! Won't let anyone else near mine or my kids' hair!"</p>
           <cite>Chrissy A.</cite>
         </div>
-        <div class="review-item hidden-review">
-          <div class="review-stars">★★★★★</div>
-          <p>"Crystal was very professional and great customer service! Will be back again."</p>
-          <cite>Joel G.</cite>
-        </div>
-        <div class="review-item hidden-review">
+        <div class="review-card hidden-review">
           <div class="review-stars">★★★★★</div>
           <p>"Fantastic service. Crystal is fantastic! A true highlight in Westmont."</p>
           <cite>Eduardo S. · Local Guide</cite>
         </div>
-        <div class="review-item hidden-review">
+        <div class="review-card hidden-review">
           <div class="review-stars">★★★★★</div>
           <p>"Been coming for years! Super reasonable and always perfect!"</p>
           <cite>Jake M.</cite>
         </div>
-        <div class="review-item hidden-review">
+        <div class="review-card hidden-review">
           <div class="review-stars">★★★★★</div>
           <p>"Hidden gem. Wish they did evening hours as well!"</p>
           <cite>Nicolas C. · Local Guide</cite>
         </div>
-        <div class="review-item hidden-review">
-          <div class="review-stars">★★★★★</div>
-          <p>"Great, as always! Great conversation, great people and great haircut!"</p>
-          <cite>Networkguy · Local Guide</cite>
-        </div>
-        <div class="review-item hidden-review">
-          <div class="review-stars">★★★★★</div>
-          <p>"This gal can cut hair and is truly fun to talk to while she's getting it done!"</p>
-          <cite>Tom H.</cite>
-        </div>
-        <div class="review-item hidden-review">
+        <div class="review-card hidden-review">
           <div class="review-stars">★★★★★</div>
           <p>"Very sweet lady there, affordable, friendly and easy to talk to."</p>
           <cite>Al S. · Local Guide</cite>
         </div>
-        <div class="review-item hidden-review">
+        <div class="review-card hidden-review">
+          <div class="review-stars">★★★★★</div>
+          <p>"Crystal was very professional with great customer service! Will be back again."</p>
+          <cite>Joel G.</cite>
+        </div>
+        <div class="review-card hidden-review">
+          <div class="review-stars">★★★★★</div>
+          <p>"This gal can cut hair and is truly fun to talk to while she's getting it done!"</p>
+          <cite>Tom H.</cite>
+        </div>
+        <div class="review-card hidden-review">
           <div class="review-stars">★★★★★</div>
           <p>"ALWAYS AWESOME FRIENDLY SERVICE!"</p>
           <cite>Lynne S. · Local Guide</cite>
         </div>
-        <div class="review-item hidden-review">
+        <div class="review-card hidden-review">
           <div class="review-stars">★★★★★</div>
-          <p>"Crystal is great!"</p>
-          <cite>Mike · Local Guide</cite>
+          <p>"Great, as always! Great conversation, great people and great haircut!"</p>
+          <cite>Networkguy · Local Guide</cite>
         </div>
-        <div class="review-item hidden-review">
-          <div class="review-stars">★★★★★</div>
-          <p>"Crystal is awesome! Great with kids haircuts too."</p>
-          <cite>Jeffrey U.</cite>
-        </div>
-        <div class="review-item hidden-review">
-          <div class="review-stars">★★★★★</div>
-          <p>"The people that work there are really nice and the final product looks amazing."</p>
-          <cite>Mason K.</cite>
-        </div>
-        <div class="review-item hidden-review">
-          <div class="review-stars">★★★★★</div>
-          <p>"Great... Reasonably priced and quality work."</p>
-          <cite>Elliot T. · Local Guide</cite>
-        </div>
-        <div class="review-item hidden-review">
-          <div class="review-stars">★★★★★</div>
-          <p>"Got me in right away. Quick service."</p>
-          <cite>Brian S. · Local Guide</cite>
-        </div>
-        <div class="review-item hidden-review">
-          <div class="review-stars">★★★★★</div>
-          <p>"Great service and very friendly person. Thank you."</p>
-          <cite>Sandeep M. · Local Guide</cite>
-        </div>
-        <div class="review-item hidden-review">
-          <div class="review-stars">★★★★★</div>
-          <p>"Professional, quick and easy."</p>
-          <cite>James H.</cite>
-        </div>
-
       </div>
-      <div class="reviews-actions">
-        <button class="btn btn-outline-dark" id="show-more-reviews">Show All Reviews</button>
-        <a href="https://g.page/r/review" class="btn btn-outline-dark" target="_blank" rel="noopener">Leave a Review</a>
+
+      <div class="reviews-footer">
+        <button class="btn btn-secondary" id="show-more-reviews">Show All Reviews</button>
       </div>
     </div>
   </section>
 
-  <!-- CTA banner -->
-  <section class="cta-banner">
-    <div class="cta-bg cta-bg-gradient"></div>
-    <div class="cta-overlay"></div>
-    <div class="container cta-content">
-      <h2>Ready for a Fresh Cut?</h2>
-      <p>Walk-ins welcome Mon–Fri. Saturday by appointment only.</p>
-      <div class="cta-actions">
-        <a href="contact.html" class="btn btn-gold">Book Now</a>
-        <a href="tel:+16302870775" class="btn btn-ghost">(630) 287-0775</a>
+  <!-- Info + CTA -->
+  <section class="info-cta">
+    <div class="container info-cta-grid">
+      <div class="info-cta-text">
+        <p class="section-label">Come See Us</p>
+        <h2>Walk in Monday–Friday.<br>Book ahead for Saturday.</h2>
+        <a href="contact.html" class="btn btn-primary" style="margin-top:2rem;">Request an Appointment</a>
       </div>
-    </div>
-  </section>
-
-  <!-- Info footer bar -->
-  <section class="info-bar">
-    <div class="container info-bar-grid">
-      <div class="info-bar-item">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
-        <div><strong>128 S Cass Ave</strong><span>Westmont, IL 60559</span></div>
-      </div>
-      <div class="info-bar-item">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012 1h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
-        <div><strong>(630) 287-0775</strong><span>Call or text anytime</span></div>
-      </div>
-      <div class="info-bar-item">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-        <div><strong>Mon–Fri 9AM–7PM</strong><span>Sat 8AM–5PM (appt. only) · Sun Closed</span></div>
-      </div>
-      <div class="info-bar-item">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-        <div><strong>Walk-ins Welcome</strong><span>Mon–Fri only · <a href="contact.html">Book for Saturday</a></span></div>
+      <div class="info-cta-details">
+        <div class="info-detail">
+          <span class="info-detail-label">Address</span>
+          <span>128 S Cass Ave, Westmont, IL 60559</span>
+        </div>
+        <div class="info-detail">
+          <span class="info-detail-label">Phone</span>
+          <span><a href="tel:+16302870775">(630) 287-0775</a></span>
+        </div>
+        <div class="info-detail">
+          <span class="info-detail-label">Hours</span>
+          <span>Mon–Fri 9AM–7PM<br>Sat 8AM–5PM (by appt.)<br>Sun Closed</span>
+        </div>
       </div>
     </div>
   </section>
 
   <footer class="footer">
     <div class="container footer-inner">
-      <div>
-        <p class="footer-brand">THE BARBERSHOP</p>
-        <p>128 S Cass Ave, Westmont, IL 60559</p>
-      </div>
+      <p class="footer-name">The Barbershop</p>
+      <p>128 S Cass Ave · Westmont, IL 60559 · <a href="tel:+16302870775">(630) 287-0775</a></p>
       <nav class="footer-nav">
         <a href="index.html">Home</a>
         <a href="services.html">Services</a>
         <a href="contact.html">Book Now</a>
       </nav>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2026 The Barbershop · Westmont, IL</p>
+      <p class="footer-copy">&copy; 2026 The Barbershop</p>
     </div>
   </footer>
 
