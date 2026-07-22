@@ -1,11 +1,16 @@
 # Trading bot configuration. Secrets (API keys, private key paths) come from
 # environment variables / .env, never hardcoded here. See .env.example.
 
-mode: paper  # paper | live  -- MUST be changed to "live" explicitly, never defaults to live
+mode: live  # paper | live -- "live" means real orders are placed via the exchange API.
+            # Safe here ONLY because exchange.use_demo below is true: every order goes
+            # to Kalshi's demo/sandbox account (demo-api.kalshi.co), never real money.
+            # Do not set use_demo to false without a real live-trading review.
 
 exchange:
   name: kalshi
-  # Use Kalshi's demo/sandbox environment for live-mode testing before real money.
+  # true = Kalshi's demo/sandbox environment (fake money, real order matching).
+  # false = real production Kalshi account with real money -- never flip this
+  # without deliberately re-reviewing risk limits first.
   use_demo: true
   base_url: "https://api.elections.kalshi.com/trade-api/v2"
   demo_base_url: "https://demo-api.kalshi.co/trade-api/v2"

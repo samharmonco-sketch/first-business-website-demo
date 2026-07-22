@@ -83,7 +83,8 @@ def main() -> int:
     elif args.command == "serve":
         from .dashboard.web import run_server
         run_server(adapter, store, risk_manager, logs, port=args.port,
-                   poll_interval_seconds=config.polling.interval_seconds)
+                   poll_interval_seconds=config.polling.interval_seconds,
+                   use_demo=config.exchange.use_demo)
     elif args.command == "kill":
         risk_manager.kill_switch.engage()
         print("Kill switch engaged. No new trades will be placed.")

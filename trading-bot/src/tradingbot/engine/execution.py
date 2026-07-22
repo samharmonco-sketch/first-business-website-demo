@@ -82,7 +82,7 @@ class ExecutionEngine:
         if settled:
             self.logs.logger.info(f"[cycle {cycle_id}] settled {settled} expired position(s)")
 
-        exited = check_exits(self.adapter, self.store, self.logs, cycle_id,
+        exited = check_exits(self.adapter, self.logs, cycle_id,
                               self.config.exits.take_profit_pct, self.config.exits.stop_loss_pct)
         if exited:
             self.logs.logger.info(f"[cycle {cycle_id}] exited {exited} position(s) via take-profit/stop-loss")

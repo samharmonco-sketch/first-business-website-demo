@@ -8,6 +8,7 @@ that the running bot (in its own terminal) has already written to disk.
 """
 from __future__ import annotations
 
+import datetime
 import html
 import http.server
 import socketserver
@@ -21,6 +22,17 @@ from ..state_store import StateStore
 
 def _fmt_money(x: float) -> str:
     return f"${x:,.2f}"
+
+
+def _fmt_time(ts: float) -> str:
+    return datetime.datetime.fromtimestamp(ts).strftime("%H:%M:%S")
+
+
+_ORDER_EVENT_BADGES = {
+    "order_placed": ("BUY", "#1a7f37"),
+    "exit_order": ("EXIT", "#9a6700"),
+    "settlement": ("SETTLED", "#8250df"),
+}
 
 
 def _badge(text: str, color: str) -> str:
@@ -59,11 +71,12 @@ def _heartbeat(logs: BotLogs, poll_interval_seconds: int) -> tuple[str, str]:
 
 
 def _render_html(adapter: ExchangeAdapter, store: StateStore, risk_manager: RiskManager, logs: BotLogs,
-                  poll_interval_seconds: int = 60) -> str:
+                  poll_interval_seconds: int = 60, use_demo: bool = True) -> str:
     account = adapter.get_account_state()
     positions = account.positions
     open_orders = store.get_open_orders()
     decisions = list(reversed(logs.decisions.tail(50)))
+    trade_history = list(reversed(logs.orders.tail(50)))
     heartbeat_text, heartbeat_color = _heartbeat(logs, poll_interval_seconds)
 
     kill_active = risk_manager.kill_switch.is_active()
@@ -95,13 +108,30 @@ def _render_html(adapter: ExchangeAdapter, store: StateStore, risk_manager: Risk
         )
     decisions_html = "".join(decision_rows) or "<tr><td colspan='7' class='empty'>No decisions logged yet</td></tr>"
 
+    history_rows = []
+    for o in trade_history:
+        label, color = _ORDER_EVENT_BADGES.get(o.get("event", ""), (o.get("event", "?").upper(), "#484f58"))
+        history_rows.append(
+            f"<tr><td>{_fmt_time(o.get('ts', 0))}</td><td>{_badge(label, color)}</td>"
+            f"<td>{html.escape(o.get('ticker',''))}</td><td>{html.escape(o.get('side',''))}</td>"
+            f"<td>{o.get('count', 0)}</td><td>{o.get('price', 0):.3f}</td>"
+            f"<td>{html.escape(o.get('status',''))}</td>"
+            f"<td class='reason'>{html.escape((o.get('reason') or '')[:150])}</td></tr>"
+        )
+    history_html = "".join(history_rows) or "<tr><td colspan='8' class='empty'>No trades placed yet</td></tr>"
+
     status_badges = "".join([
         _badge("KILL SWITCH ENGAGED", "#cf222e") if kill_active else _badge("kill switch: off", "#30363d"),
         _badge("DAILY LOSS HALT", "#cf222e") if halted else _badge("daily halt: no", "#30363d"),
         _badge("DAY-ONE MODE ACTIVE", "#9a6700") if day_one else _badge("day-one: complete", "#30363d"),
     ])
 
-    mode_label = "LIVE" if adapter.name == "kalshi" else "PAPER"
+    if adapter.name != "kalshi":
+        mode_label, mode_color = "PAPER (simulated fills)", "#30363d"
+    elif use_demo:
+        mode_label, mode_color = "LIVE — Kalshi DEMO account (no real money)", "#1a7f37"
+    else:
+        mode_label, mode_color = "LIVE — REAL MONEY", "#cf222e"
 
     return f"""<!doctype html>
 <html>
@@ -129,8 +159,8 @@ def _render_html(adapter: ExchangeAdapter, store: StateStore, risk_manager: Risk
 </head>
 <body>
   <h1>Trading Bot Dashboard</h1>
-  <div class="sub">Mode: {mode_label} &middot; auto-refreshes every 5s &middot; this tab is read-only, it never places orders</div>
-  <div class="badges">{_badge(heartbeat_text, heartbeat_color)}{status_badges}</div>
+  <div class="sub">auto-refreshes every 5s &middot; this tab is read-only, it never places orders itself</div>
+  <div class="badges">{_badge(mode_label, mode_color)}{_badge(heartbeat_text, heartbeat_color)}{status_badges}</div>
 
   <div class="stats">
     <div class="stat"><div class="label">Balance</div><div class="value">{_fmt_money(account.balance_usd)}</div></div>
@@ -151,6 +181,12 @@ def _render_html(adapter: ExchangeAdapter, store: StateStore, risk_manager: Risk
     {orders_rows}
   </table>
 
+  <h2>Trade History (last {len(trade_history)}) &mdash; every buy, exit, and settlement</h2>
+  <table>
+    <tr><th>Time</th><th></th><th>Ticker</th><th>Side</th><th>Count</th><th>Price</th><th>Status</th><th>Reason</th></tr>
+    {history_html}
+  </table>
+
   <h2>Recent Decisions (last {len(decisions)})</h2>
   <table>
     <tr><th></th><th>Strategy</th><th>Ticker</th><th>Action</th><th>Edge</th><th>Conf</th><th>Reasoning</th></tr>
@@ -161,10 +197,10 @@ def _render_html(adapter: ExchangeAdapter, store: StateStore, risk_manager: Risk
 
 
 def run_server(adapter: ExchangeAdapter, store: StateStore, risk_manager: RiskManager, logs: BotLogs,
-               port: int = 8765, poll_interval_seconds: int = 60) -> None:
+               port: int = 8765, poll_interval_seconds: int = 60, use_demo: bool = True) -> None:
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_GET(self) -> None:
-            body = _render_html(adapter, store, risk_manager, logs, poll_interval_seconds).encode("utf-8")
+            body = _render_html(adapter, store, risk_manager, logs, poll_interval_seconds, use_demo).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
