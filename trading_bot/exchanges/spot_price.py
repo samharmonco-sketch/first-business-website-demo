@@ -10,7 +10,26 @@ import requests
 
 logger = logging.getLogger("trading_bot.spot_price")
 
-COINGECKO_IDS = {"BTC": "bitcoin", "ETH": "ethereum", "SOL": "solana"}
+COINGECKO_IDS = {
+    "BTC": "bitcoin",
+    "ETH": "ethereum",
+    "SOL": "solana",
+    "XRP": "ripple",
+    "DOGE": "dogecoin",
+    "LTC": "litecoin",
+    "ADA": "cardano",
+    "AVAX": "avalanche-2",
+    "LINK": "chainlink",
+    "DOT": "polkadot",
+    "BNB": "binancecoin",
+    "BCH": "bitcoin-cash",
+    "XLM": "stellar",
+    "NEAR": "near",
+    "TON": "the-open-network",
+    "ZEC": "zcash",
+    "HYPE": "hyperliquid",
+    "SHIB": "shiba-inu",
+}
 _cache: dict[str, tuple[float, float]] = {}  # symbol -> (timestamp, price)
 CACHE_TTL_SECONDS = 30
 

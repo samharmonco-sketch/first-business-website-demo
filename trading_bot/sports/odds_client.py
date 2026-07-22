@@ -4,22 +4,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
 
 import requests
 
 logger = logging.getLogger("trading_bot.odds")
-
-SPORT_KEYWORDS = {
-    "nfl": "americanfootball_nfl",
-    "nba": "basketball_nba",
-    "nhl": "icehockey_nhl",
-    "mlb": "baseball_mlb",
-    "ncaaf": "americanfootball_ncaaf",
-    "ncaab": "basketball_ncaab",
-    "epl": "soccer_epl",
-    "ufc": "mma_mixed_martial_arts",
-}
 
 
 @dataclass

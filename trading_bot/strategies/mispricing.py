@@ -4,15 +4,16 @@ price (CoinGecko spot), per requirement #3. Works from the very first poll
 cycle - no history needed - which is why day-one mode leans on this strategy
 for the first visible trade.
 
-Assumptions are fixed and logged plainly (this is deliberately simple, not a
-production options-pricing model): zero drift (martingale), constant
-annualized volatility per asset, and the strike/direction are parsed from the
-market title's text.
+Uses Kalshi's own numeric `floor_strike`/`strike_type` fields (confirmed
+against the live API) rather than parsing the strike out of market text -
+title text is kept only as a last-resort fallback for any market missing
+those fields. Assumptions are fixed and logged plainly (this is deliberately
+simple, not a production options-pricing model): zero drift (martingale) and
+constant annualized volatility per asset.
 """
 from __future__ import annotations
 
 import math
-import re
 from datetime import datetime, timezone
 
 from ..config import RiskConfig
@@ -20,45 +21,39 @@ from ..exchanges.spot_price import get_spot_price
 from ..models import AccountState, MarketSnapshot, NoTradeDecision, OrderAction, Side, TradeSignal
 from .base import Strategy
 
-ASSUMED_ANNUAL_VOL = {"BTC": 0.55, "ETH": 0.65, "SOL": 0.90}
+ASSUMED_ANNUAL_VOL = {
+    "BTC": 0.55,
+    "ETH": 0.65,
+    "SOL": 0.90,
+    "XRP": 0.85,
+    "DOGE": 1.10,
+    "LTC": 0.75,
+    "ADA": 0.85,
+    "AVAX": 0.95,
+    "LINK": 0.85,
+    "DOT": 0.90,
+    "BNB": 0.65,
+    "BCH": 0.80,
+    "XLM": 0.90,
+    "NEAR": 0.95,
+    "TON": 0.90,
+    "ZEC": 1.00,
+    "HYPE": 1.10,
+    "SHIB": 1.20,
+}
 STEADY_STATE_MIN_EDGE = 0.08
 DEFAULT_TRADE_DOLLARS = 100.0
 
-ASSET_PATTERNS = [
-    (re.compile(r"\bbitcoin\b|\bbtc\b", re.I), "BTC"),
-    (re.compile(r"\bethereum\b|\beth\b", re.I), "ETH"),
-    (re.compile(r"\bsolana\b|\bsol\b", re.I), "SOL"),
-]
-STRIKE_PATTERN = re.compile(r"\$?([\d,]+(?:\.\d+)?)")
-ABOVE_WORDS = re.compile(r"\babove\b|\bor higher\b|\bor more\b|\bgreater\b|\babove or equal\b", re.I)
-BELOW_WORDS = re.compile(r"\bbelow\b|\bor lower\b|\bor less\b|\bunder\b", re.I)
+# "greater"/"greater_or_equal" markets carry the strike in floor_strike;
+# "less"/"less_or_equal" carry it in cap_strike instead (confirmed against
+# the live API - floor_strike is None on those). "between" markets (two-sided
+# range contracts) aren't single-strike and are deliberately unsupported here.
+ABOVE_STRIKE_TYPES = {"greater", "greater_or_equal"}
+BELOW_STRIKE_TYPES = {"less", "less_or_equal"}
 
 
 def norm_cdf(x: float) -> float:
     return 0.5 * (1 + math.erf(x / math.sqrt(2)))
-
-
-def _detect_asset(title: str) -> str | None:
-    for pattern, symbol in ASSET_PATTERNS:
-        if pattern.search(title):
-            return symbol
-    return None
-
-
-def _parse_strike(title: str) -> float | None:
-    matches = STRIKE_PATTERN.findall(title)
-    if not matches:
-        return None
-    try:
-        return float(matches[0].replace(",", ""))
-    except ValueError:
-        return None
-
-
-def _direction(title: str) -> str:
-    if BELOW_WORDS.search(title):
-        return "below"
-    return "above"  # default assumption when ambiguous, logged as such
 
 
 class CryptoMispricingStrategy(Strategy):
@@ -71,13 +66,20 @@ class CryptoMispricingStrategy(Strategy):
         risk: RiskConfig,
         day_one_mode: bool = False,
     ) -> TradeSignal | NoTradeDecision:
-        asset = _detect_asset(market.title)
+        asset = market.raw.get("_asset")
         if not asset:
-            return NoTradeDecision(self.name, market.ticker, "could not identify crypto asset from market title")
+            return NoTradeDecision(self.name, market.ticker, "market has no recognized crypto asset tag")
 
-        strike = _parse_strike(market.title)
+        strike_type = market.raw.get("strike_type", "")
+        if strike_type in ABOVE_STRIKE_TYPES:
+            strike, direction = market.raw.get("floor_strike"), "above"
+        elif strike_type in BELOW_STRIKE_TYPES:
+            strike, direction = market.raw.get("cap_strike"), "below"
+        else:
+            return NoTradeDecision(self.name, market.ticker, f"unsupported strike_type '{strike_type}', skipping (e.g. two-sided range contracts)")
         if strike is None:
-            return NoTradeDecision(self.name, market.ticker, f"could not parse a strike price from title '{market.title}'")
+            return NoTradeDecision(self.name, market.ticker, f"strike_type '{strike_type}' but no strike value present")
+        strike = float(strike)
 
         spot = get_spot_price(asset)
         if spot is None:
@@ -96,7 +98,6 @@ class CryptoMispricingStrategy(Strategy):
 
         t_years = seconds_to_close / (365.25 * 24 * 3600)
         vol = ASSUMED_ANNUAL_VOL.get(asset, 0.60)
-        direction = _direction(market.title)
 
         z = (math.log(spot / strike) - 0.5 * vol**2 * t_years) / (vol * math.sqrt(t_years))
         model_prob_above = norm_cdf(z)

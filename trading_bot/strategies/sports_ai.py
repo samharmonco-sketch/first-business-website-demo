@@ -1,9 +1,11 @@
-"""AI sports analysis strategy: matches a Kalshi sports market to a live
-odds-API event by team name, gets Claude's independent probability estimate,
-and trades the edge against the market's implied probability. Every AI
-prompt/response/parsed-number is logged (via extra) for auditability -
-requirement #4 explicitly asked to see why the call was made, not just the
-trade.
+"""AI sports analysis strategy: Kalshi runs one binary market per team per
+game (confirmed against the live API - "Team A vs Team B Winner?" is actually
+two separate YES/NO markets, one per team, not a single home/away market), so
+matching is done on the market's own yes_sub_title/no_sub_title team names
+against an odds-API event, not on guessing "home vs away" from title word
+order. Every AI prompt/response/parsed-number is logged (via extra) for
+auditability - requirement #4 explicitly asked to see why the call was made,
+not just the trade.
 """
 from __future__ import annotations
 
@@ -14,13 +16,21 @@ from anthropic import Anthropic
 from ..config import RiskConfig
 from ..models import AccountState, MarketSnapshot, NoTradeDecision, OrderAction, Side, TradeSignal
 from ..sports.ai_analyst import analyze
-from ..sports.odds_client import SPORT_KEYWORDS, OddsApiClient, OddsEvent
+from ..sports.odds_client import OddsApiClient, OddsEvent
 from .base import Strategy
 
 logger = logging.getLogger("trading_bot.sports_ai")
 
 STEADY_STATE_MIN_EDGE = 0.07
 DEFAULT_TRADE_DOLLARS = 100.0
+
+
+def _team_match(short_name: str, full_name: str) -> bool:
+    s = (short_name or "").lower().strip()
+    f = (full_name or "").lower().strip()
+    if not s or not f:
+        return False
+    return s in f or f in s
 
 
 class SportsAiStrategy(Strategy):
@@ -32,10 +42,6 @@ class SportsAiStrategy(Strategy):
         self.model = model
         self._event_cache: dict[str, list[OddsEvent]] = {}
 
-    def _sport_keys_for(self, market: MarketSnapshot) -> list[str]:
-        text = f"{market.title} {market.series_ticker or ''} {market.raw.get('category', '')}".lower()
-        return [key for kw, key in SPORT_KEYWORDS.items() if kw in text] or list(SPORT_KEYWORDS.values())
-
     def _events_for_sport(self, sport_key: str) -> list[OddsEvent]:
         if sport_key not in self._event_cache:
             try:
@@ -45,12 +51,18 @@ class SportsAiStrategy(Strategy):
                 self._event_cache[sport_key] = []
         return self._event_cache[sport_key]
 
-    def _match_event(self, market: MarketSnapshot) -> OddsEvent | None:
-        title_lower = market.title.lower()
-        for sport_key in self._sport_keys_for(market):
-            for event in self._events_for_sport(sport_key):
-                if event.home_team.lower() in title_lower and event.away_team.lower() in title_lower:
-                    return event
+    def _match_event(self, market: MarketSnapshot, yes_team: str, no_team: str) -> OddsEvent | None:
+        sport_key = market.raw.get("_sport_key")
+        if not sport_key:
+            return None
+        for event in self._events_for_sport(sport_key):
+            yes_is_home = _team_match(yes_team, event.home_team)
+            yes_is_away = _team_match(yes_team, event.away_team)
+            if not (yes_is_home or yes_is_away):
+                continue
+            other_team, other_field = (event.away_team, "away") if yes_is_home else (event.home_team, "home")
+            if _team_match(no_team, other_team):
+                return event
         return None
 
     def evaluate(
@@ -60,27 +72,28 @@ class SportsAiStrategy(Strategy):
         risk: RiskConfig,
         day_one_mode: bool = False,
     ) -> TradeSignal | NoTradeDecision:
-        event = self._match_event(market)
+        yes_team = market.raw.get("yes_sub_title", "")
+        no_team = market.raw.get("no_sub_title", "")
+        if not yes_team:
+            return NoTradeDecision(self.name, market.ticker, "market has no yes_sub_title team name to match against")
+
+        event = self._match_event(market, yes_team, no_team)
         if not event:
-            return NoTradeDecision(self.name, market.ticker, "no matching odds-API event found for this market's teams")
+            return NoTradeDecision(self.name, market.ticker, f"no matching odds-API event found for '{yes_team}' vs '{no_team}'")
 
         result = analyze(self.anthropic_client, self.model, event)
         if not result:
             return NoTradeDecision(self.name, market.ticker, "AI sports analysis call failed or returned unparseable output")
 
-        # Which side of the Kalshi market is "home team wins"?
-        home_first = market.title.lower().find(event.home_team.lower())
-        away_first = market.title.lower().find(event.away_team.lower())
-        yes_means_home = home_first != -1 and (away_first == -1 or home_first < away_first)
-
-        model_prob_yes = result.home_win_probability if yes_means_home else (1 - result.home_win_probability)
+        yes_is_home = _team_match(yes_team, event.home_team)
+        model_prob_yes = result.home_win_probability if yes_is_home else (1 - result.home_win_probability)
         edge = model_prob_yes - market.implied_yes_prob
         min_edge = risk.day_one_min_edge if day_one_mode else STEADY_STATE_MIN_EDGE
 
         reasoning = (
-            f"{event.away_team} @ {event.home_team}: AI home_win_prob={result.home_win_probability:.3f} "
-            f"(confidence={result.confidence:.2f}) vs market consensus home_implied={event.home_implied_prob:.3f} "
-            f"[{event.bookmaker_count} books]. Kalshi yes_means_home={yes_means_home}, "
+            f"{event.away_team} @ {event.home_team}: this market's YES = '{yes_team}' wins. "
+            f"AI home_win_prob={result.home_win_probability:.3f} (confidence={result.confidence:.2f}) vs "
+            f"market consensus home_implied={event.home_implied_prob:.3f} [{event.bookmaker_count} books]. "
             f"model_prob_yes={model_prob_yes:.3f} vs kalshi_implied_yes={market.implied_yes_prob:.3f}, "
             f"edge={edge:+.3f} (min_edge={min_edge:.3f}). AI reasoning: {result.reasoning}"
         )
