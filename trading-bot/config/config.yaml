@@ -20,15 +20,15 @@ polling:
   crypto_series_tickers:
     - "KXBTC"
     - "KXETH"
-  # Illustrative -- confirm these are the real Kalshi series tickers for
-  # the sports you want covered (Kalshi's sports catalog changes by season
-  # and league availability); see strategies.sports_ai.series_to_sport_key
-  # below for the matching TheOddsAPI sport key per series.
+  # Confirmed against Kalshi's production /series catalog (12,146 series
+  # scanned) -- these are the real game-level series tickers for individual
+  # game moneylines; KXNFL/KXNBA/KXMLB/KXNHL (without "GAME") match unrelated
+  # markets like season win-totals and draft props, not single games.
   sports_series_tickers:
-    - "KXNFL"
-    - "KXNBA"
-    - "KXMLB"
-    - "KXNHL"
+    - "KXNFLGAME"
+    - "KXNBAGAME"
+    - "KXMLBGAME"
+    - "KXNHLGAME"
   max_markets_per_cycle: 25
 
 bankroll:
@@ -91,10 +91,10 @@ strategies:
     # Kalshi series ticker -> TheOddsAPI sport key. Add leagues here as you
     # confirm the correct Kalshi series ticker for them.
     series_to_sport_key:
-      KXNFL: "americanfootball_nfl"
-      KXNBA: "basketball_nba"
-      KXMLB: "baseball_mlb"
-      KXNHL: "icehockey_nhl"
+      KXNFLGAME: "americanfootball_nfl"
+      KXNBAGAME: "basketball_nba"
+      KXMLBGAME: "baseball_mlb"
+      KXNHLGAME: "icehockey_nhl"
 
 risk:
   kill_switch_file: "data/KILL_SWITCH"

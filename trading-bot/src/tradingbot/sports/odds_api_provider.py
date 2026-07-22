@@ -26,16 +26,15 @@ from .data_sources import SportsDataProvider, SportsEvent, SportsEventData
 
 BASE_URL = "https://api.the-odds-api.com/v4"
 
-# Kalshi sports series ticker -> TheOddsAPI sport key. Confirm against
-# Kalshi's actual sports series catalog (GET /trade-api/v2/series?category=sports
-# or the Kalshi website) before relying on this -- override/extend via
-# config.yaml's strategies.sports_ai.series_to_sport_key, this is just the
-# default seed for major US leagues.
+# Kalshi sports series ticker -> TheOddsAPI sport key. Confirmed against
+# Kalshi's production /trade-api/v2/series catalog: KXNFLGAME/KXNBAGAME/
+# KXMLBGAME/KXNHLGAME are the game-level (single-game moneyline) series --
+# override/extend via config.yaml's strategies.sports_ai.series_to_sport_key.
 DEFAULT_SERIES_TO_SPORT_KEY = {
-    "KXNFL": "americanfootball_nfl",
-    "KXNBA": "basketball_nba",
-    "KXMLB": "baseball_mlb",
-    "KXNHL": "icehockey_nhl",
+    "KXNFLGAME": "americanfootball_nfl",
+    "KXNBAGAME": "basketball_nba",
+    "KXMLBGAME": "baseball_mlb",
+    "KXNHLGAME": "icehockey_nhl",
 }
 
 

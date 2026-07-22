@@ -259,9 +259,10 @@ require no changes.
   blocked in the dev environment) -- run `scripts/validate_sports_ai.py`
   and check how many real events actually match; tune the heuristic if
   match rate is low.
-- **`series_to_sport_key` and `sports_series_tickers` in config.yaml are
-  illustrative** (KXNFL/KXNBA/KXMLB/KXNHL) -- confirm these are Kalshi's
-  actual current sports series tickers before relying on them.
+- **`series_to_sport_key` and `sports_series_tickers` in config.yaml** use
+  the confirmed real Kalshi game-level series tickers (KXNFLGAME/KXNBAGAME/
+  KXMLBGAME/KXNHLGAME, found via Kalshi's production `/trade-api/v2/series`
+  catalog) -- re-verify each season if Kalshi renames or retires a series.
 - **Crypto strike parsing**: `mispricing.py` reads Kalshi's `floor_strike`/
   `cap_strike` fields when present, falling back to regex-parsing the
   market title. Confirm this matches the actual field names Kalshi returns
