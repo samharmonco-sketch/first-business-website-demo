@@ -4,6 +4,7 @@ Usage:
     python -m tradingbot.main run              # start the autonomous loop
     python -m tradingbot.main once              # run a single poll cycle (for testing)
     python -m tradingbot.main status            # print the dashboard snapshot
+    python -m tradingbot.main serve             # local web dashboard (http://127.0.0.1:8765)
     python -m tradingbot.main kill              # engage the kill switch (no new trades)
     python -m tradingbot.main kill --flatten    # kill switch + close all open positions
     python -m tradingbot.main resume            # disengage the kill switch
@@ -63,6 +64,8 @@ def main() -> int:
     sub.add_parser("run", help="start the autonomous execution loop")
     sub.add_parser("once", help="run a single poll cycle and exit")
     sub.add_parser("status", help="print current positions/orders/decisions/PnL")
+    serve_parser = sub.add_parser("serve", help="local web dashboard (auto-refreshing, read-only)")
+    serve_parser.add_argument("--port", type=int, default=8765)
     kill_parser = sub.add_parser("kill", help="engage the kill switch")
     kill_parser.add_argument("--flatten", action="store_true", help="also close all open positions")
     sub.add_parser("resume", help="disengage the kill switch")
@@ -77,6 +80,9 @@ def main() -> int:
         print(f"Cycle complete: {summary}")
     elif args.command == "status":
         print_status(adapter, store, risk_manager, logs)
+    elif args.command == "serve":
+        from .dashboard.web import run_server
+        run_server(adapter, store, risk_manager, logs, port=args.port)
     elif args.command == "kill":
         risk_manager.kill_switch.engage()
         print("Kill switch engaged. No new trades will be placed.")
