@@ -1,0 +1,543 @@
+<title>Trading Desk — Live Performance</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --surface-2: #f2f1ee;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-muted: #898781;
+    --grid: #e1e0d9;
+    --border: rgba(11, 11, 11, 0.10);
+    --accent: #a8672b;
+    --accent-soft: rgba(168, 103, 43, 0.12);
+    --crypto: #2a78d6;
+    --sports: #eb6834;
+    --good: #0ca30c;
+    --good-soft: rgba(12, 163, 12, 0.12);
+    --warning: #fab219;
+    --warning-soft: rgba(250, 178, 25, 0.14);
+    --critical: #d03b3b;
+    --critical-soft: rgba(208, 59, 59, 0.12);
+    --serif: "Iowan Old Style", "Sitka Text", Georgia, "Times New Roman", serif;
+    --sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #15171b;
+      --surface-2: #1c1f24;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --ink-muted: #8b8f97;
+      --grid: #2a2d33;
+      --border: rgba(255, 255, 255, 0.10);
+      --accent: #d9a441;
+      --accent-soft: rgba(217, 164, 65, 0.14);
+      --crypto: #3987e5;
+      --sports: #d95926;
+      --good: #17c964;
+      --good-soft: rgba(23, 201, 100, 0.14);
+      --warning: #fab219;
+      --warning-soft: rgba(250, 178, 25, 0.14);
+      --critical: #ec5f5f;
+      --critical-soft: rgba(236, 95, 95, 0.14);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #15171b;
+    --surface-2: #1c1f24;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --ink-muted: #8b8f97;
+    --grid: #2a2d33;
+    --border: rgba(255, 255, 255, 0.10);
+    --accent: #d9a441;
+    --accent-soft: rgba(217, 164, 65, 0.14);
+    --crypto: #3987e5;
+    --sports: #d95926;
+    --good: #17c964;
+    --good-soft: rgba(23, 201, 100, 0.14);
+    --warning: #fab219;
+    --warning-soft: rgba(250, 178, 25, 0.14);
+    --critical: #ec5f5f;
+    --critical-soft: rgba(236, 95, 95, 0.14);
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --surface-2: #f2f1ee;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-muted: #898781;
+    --grid: #e1e0d9;
+    --border: rgba(11, 11, 11, 0.10);
+    --accent: #a8672b;
+    --accent-soft: rgba(168, 103, 43, 0.12);
+    --crypto: #2a78d6;
+    --sports: #eb6834;
+    --good: #0ca30c;
+    --good-soft: rgba(12, 163, 12, 0.12);
+    --warning: #fab219;
+    --warning-soft: rgba(250, 178, 25, 0.14);
+    --critical: #d03b3b;
+    --critical-soft: rgba(208, 59, 59, 0.12);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.45;
+  }
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* ---- header ---- */
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+  }
+  header h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 1.7rem;
+    letter-spacing: 0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .subtitle {
+    color: var(--ink-muted);
+    font-size: 0.82rem;
+    margin-top: 4px;
+  }
+  .badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .pill.mode-paper { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+  .pill.mode-live { color: var(--critical); background: var(--critical-soft); border-color: transparent; }
+  .pill.kill-on { color: var(--critical); background: var(--critical-soft); border-color: transparent; }
+  .pill.kill-off { color: var(--good); background: var(--good-soft); border-color: transparent; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  /* ---- hero stats ---- */
+  .stat-row {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .stat {
+    background: var(--surface);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .stat .label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+  }
+  .stat .value {
+    font-family: var(--serif);
+    font-size: 1.55rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .stat .value.mono { font-family: var(--mono); font-size: 1.3rem; }
+  .stat .delta {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .delta.good { color: var(--good); }
+  .delta.bad { color: var(--critical); }
+  .delta.flat { color: var(--ink-muted); }
+
+  /* ---- panels ---- */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 18px 8px;
+  }
+  .panel-title {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .panel-title .meta { color: var(--ink-muted); text-transform: none; letter-spacing: 0; font-family: var(--mono); font-size: 0.72rem; }
+
+  #chart-wrap { position: relative; }
+  #chart-tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--ink);
+    transform: translate(-50%, -115%);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.1s ease;
+    z-index: 5;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 860px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .stat-row { grid-template-columns: 1fr 1fr; }
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  th {
+    text-align: left;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-muted);
+    font-weight: 500;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+  }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  .table-scroll { max-height: 360px; overflow: auto; }
+  .table-scroll::-webkit-scrollbar { width: 8px; }
+  .table-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 999px;
+  }
+  .tag.crypto { color: var(--crypto); background: color-mix(in srgb, var(--crypto) 14%, transparent); }
+  .tag.sports { color: var(--sports); background: color-mix(in srgb, var(--sports) 14%, transparent); }
+  .tag.other { color: var(--ink-muted); background: var(--surface-2); }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 999px;
+  }
+  .status.filled { color: var(--good); background: var(--good-soft); }
+  .status.rejected { color: var(--critical); background: var(--critical-soft); }
+  .status.veto { color: var(--warning); background: var(--warning-soft); }
+  .status.notrade { color: var(--ink-muted); background: var(--surface-2); }
+
+  .reasoning {
+    color: var(--ink-2);
+    font-size: 0.78rem;
+    max-width: 480px;
+  }
+
+  .empty-state {
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+    padding: 24px 4px 20px;
+    font-family: var(--mono);
+  }
+
+  footer {
+    color: var(--ink-muted);
+    font-size: 0.74rem;
+    font-family: var(--mono);
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Trading Desk</h1>
+      <div class="subtitle" id="subtitle-line">—</div>
+    </div>
+    <div class="badges" id="badges"></div>
+  </header>
+
+  <div class="stat-row" id="stat-row"></div>
+
+  <div class="panel">
+    <div class="panel-title">
+      <span>Equity curve</span>
+      <span class="meta" id="curve-meta"></span>
+    </div>
+    <div id="chart-wrap">
+      <div id="chart-tooltip"></div>
+      <svg id="chart" width="100%" height="220" viewBox="0 0 1000 220" preserveAspectRatio="none"></svg>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-title"><span>Open positions</span><span class="meta" id="positions-count"></span></div>
+      <div class="table-scroll" id="positions-table"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span>Recent orders</span><span class="meta" id="orders-count"></span></div>
+      <div class="table-scroll" id="orders-table"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title"><span>Decision log — every signal evaluated, traded or not</span><span class="meta" id="decisions-count"></span></div>
+    <div class="table-scroll" id="decisions-table"></div>
+  </div>
+
+  <footer id="footer"></footer>
+</div>
+
+<script>
+const DATA = __DASHBOARD_DATA__;
+
+function fmtUsd(n) {
+  if (n === null || n === undefined) return "—";
+  const sign = n < 0 ? "-" : "";
+  return sign + "$" + Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtPct(n) {
+  if (n === null || n === undefined) return "—";
+  return (n >= 0 ? "+" : "") + (n * 100).toFixed(2) + "%";
+}
+function fmtTime(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d)) return iso;
+  return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+function categoryOf(ticker, extra) {
+  const t = (ticker || "").toLowerCase();
+  if (/btc|eth|sol|crypto/.test(t)) return "crypto";
+  if (/nfl|nba|nhl|mlb|ncaa|sport/.test(t)) return "sports";
+  return "other";
+}
+function tagHtml(cat) {
+  return `<span class="tag ${cat}">${cat}</span>`;
+}
+
+// ---- header / badges ----
+document.getElementById("subtitle-line").textContent =
+  `Autonomous paper-trading engine · Kalshi crypto-interval + AI sports analysis · last updated ${fmtTime(DATA.generated_at)}`;
+
+const badges = document.getElementById("badges");
+badges.innerHTML = `
+  <span class="pill mode-${DATA.mode === "live" ? "live" : "paper"}"><span class="dot"></span>${DATA.mode}</span>
+  <span class="pill ${DATA.kill_switch_engaged ? "kill-on" : "kill-off"}"><span class="dot"></span>kill switch ${DATA.kill_switch_engaged ? "engaged" : "clear"}</span>
+`;
+
+// ---- hero stats ----
+const b = DATA.bankroll;
+const dailyClass = b.daily_pnl_pct > 0.001 ? "good" : b.daily_pnl_pct < -0.001 ? "bad" : "flat";
+document.getElementById("stat-row").innerHTML = `
+  <div class="stat">
+    <div class="label">Equity</div>
+    <div class="value">${fmtUsd(b.equity)}</div>
+    <div class="delta ${dailyClass}">${fmtPct(b.daily_pnl_pct)} today</div>
+  </div>
+  <div class="stat">
+    <div class="label">Cash</div>
+    <div class="value mono">${fmtUsd(b.cash)}</div>
+  </div>
+  <div class="stat">
+    <div class="label">Exposure</div>
+    <div class="value mono">${fmtUsd(b.exposure)}</div>
+    <div class="delta flat">cap ${(DATA.risk.max_total_exposure_pct * 100).toFixed(0)}% of equity</div>
+  </div>
+  <div class="stat">
+    <div class="label">Realized PnL</div>
+    <div class="value mono">${fmtUsd(b.realized_pnl)}</div>
+  </div>
+`;
+
+// ---- equity curve ----
+const curve = DATA.account_curve || [];
+const curveMeta = document.getElementById("curve-meta");
+if (curve.length < 2) {
+  curveMeta.textContent = "waiting for enough cycles to plot";
+  document.getElementById("chart").outerHTML =
+    `<div class="empty-state">Not enough account snapshots yet — the curve fills in as poll cycles run.</div>`;
+} else {
+  curveMeta.textContent = `${curve.length} snapshots`;
+  const W = 1000, H = 220, PAD = 8;
+  const values = curve.map(p => p.equity);
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = (max - min) || 1;
+  const x = i => PAD + (i / (curve.length - 1)) * (W - PAD * 2);
+  const y = v => H - PAD - ((v - min) / range) * (H - PAD * 2);
+
+  const linePts = curve.map((p, i) => `${x(i)},${y(p.equity)}`).join(" ");
+  const areaPts = `${PAD},${H - PAD} ${linePts} ${W - PAD},${H - PAD}`;
+
+  const gridLines = [0.25, 0.5, 0.75].map(f =>
+    `<line x1="${PAD}" y1="${PAD + f * (H - PAD * 2)}" x2="${W - PAD}" y2="${PAD + f * (H - PAD * 2)}" stroke="var(--grid)" stroke-width="1"/>`
+  ).join("");
+
+  const lastX = x(curve.length - 1), lastY = y(curve[curve.length - 1].equity);
+
+  const svg = document.getElementById("chart");
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.28"/>
+        <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${gridLines}
+    <polygon points="${areaPts}" fill="url(#areaFill)" stroke="none"/>
+    <polyline points="${linePts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${lastX}" cy="${lastY}" r="4" fill="var(--accent)"/>
+    <rect id="hover-capture" x="0" y="0" width="${W}" height="${H}" fill="transparent"/>
+    <line id="crosshair" x1="0" y1="${PAD}" x2="0" y2="${H - PAD}" stroke="var(--ink-muted)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>
+  `;
+
+  const tooltip = document.getElementById("chart-tooltip");
+  const capture = document.getElementById("hover-capture");
+  const crosshair = document.getElementById("crosshair");
+  capture.addEventListener("mousemove", (e) => {
+    const rect = svg.getBoundingClientRect();
+    const relX = ((e.clientX - rect.left) / rect.width) * W;
+    let idx = Math.round(((relX - PAD) / (W - PAD * 2)) * (curve.length - 1));
+    idx = Math.max(0, Math.min(curve.length - 1, idx));
+    const px = x(idx);
+    crosshair.setAttribute("x1", px);
+    crosshair.setAttribute("x2", px);
+    crosshair.setAttribute("opacity", 1);
+    tooltip.style.opacity = 1;
+    tooltip.style.left = (px / W) * 100 + "%";
+    tooltip.style.top = y(curve[idx].equity) + "px";
+    tooltip.innerHTML = `${fmtTime(curve[idx].timestamp)}<br><strong>${fmtUsd(curve[idx].equity)}</strong>`;
+  });
+  capture.addEventListener("mouseleave", () => { tooltip.style.opacity = 0; crosshair.setAttribute("opacity", 0); });
+}
+
+// ---- positions ----
+const positions = DATA.positions || [];
+document.getElementById("positions-count").textContent = `${positions.length} open`;
+document.getElementById("positions-table").innerHTML = positions.length === 0
+  ? `<div class="empty-state">No open positions.</div>`
+  : `<table><thead><tr><th>Market</th><th>Side</th><th class="num">Contracts</th><th class="num">Avg price</th><th class="num">Cost basis</th><th>Strategy</th></tr></thead><tbody>
+      ${positions.map(p => `
+        <tr>
+          <td>${tagHtml(categoryOf(p.ticker))} ${p.ticker}</td>
+          <td>${p.side.toUpperCase()}</td>
+          <td class="num">${p.contracts}</td>
+          <td class="num">${p.avg_price_cents.toFixed(1)}c</td>
+          <td class="num">${fmtUsd(p.cost_basis)}</td>
+          <td>${p.strategy}</td>
+        </tr>`).join("")}
+    </tbody></table>`;
+
+// ---- orders ----
+const orders = DATA.orders || [];
+document.getElementById("orders-count").textContent = `${orders.length} shown`;
+document.getElementById("orders-table").innerHTML = orders.length === 0
+  ? `<div class="empty-state">No orders placed yet.</div>`
+  : `<table><thead><tr><th>Time</th><th>Market</th><th>Side</th><th class="num">Qty</th><th class="num">Price</th><th>Status</th></tr></thead><tbody>
+      ${orders.map(o => `
+        <tr>
+          <td>${fmtTime(o.created_at)}</td>
+          <td>${tagHtml(categoryOf(o.ticker))} ${o.ticker}</td>
+          <td>${(o.action || "").toUpperCase()} ${(o.side || "").toUpperCase()}</td>
+          <td class="num">${o.contracts}</td>
+          <td class="num">${(o.price_cents || 0).toFixed(1)}c</td>
+          <td><span class="status ${o.status}">${o.status}${o.reason ? " · " + o.reason.slice(0, 40) : ""}</span></td>
+        </tr>`).join("")}
+    </tbody></table>`;
+
+// ---- decisions ----
+const decisions = DATA.decisions || [];
+document.getElementById("decisions-count").textContent = `${decisions.length} shown`;
+document.getElementById("decisions-table").innerHTML = decisions.length === 0
+  ? `<div class="empty-state">No decisions logged yet — once the engine runs a poll cycle, every signal (trade or no-trade) will appear here with its reasoning.</div>`
+  : `<table><thead><tr><th>Time</th><th>Strategy</th><th>Market</th><th>Result</th><th>Reasoning</th></tr></thead><tbody>
+      ${decisions.map(d => {
+        const isVeto = d.type === "risk_veto";
+        const isTrade = !!d.action;
+        const statusClass = isVeto ? "veto" : isTrade ? "filled" : "notrade";
+        const statusLabel = isVeto ? "risk veto" : isTrade ? "trade" : "no trade";
+        const reasoning = d.risk_reason ? `${d.reasoning} — vetoed: ${d.risk_reason}` : d.reasoning;
+        return `
+        <tr>
+          <td>${fmtTime(d.evaluated_at)}</td>
+          <td>${d.strategy || "—"}</td>
+          <td>${tagHtml(categoryOf(d.ticker))} ${d.ticker || "—"}</td>
+          <td><span class="status ${statusClass}">${statusLabel}</span></td>
+          <td class="reasoning">${(reasoning || "").slice(0, 260)}</td>
+        </tr>`;
+      }).join("")}
+    </tbody></table>`;
+
+// ---- footer ----
+const s = DATA.stats || {};
+document.getElementById("footer").innerHTML = `
+  <span>${s.cycles_run || 0} poll cycles · ${s.signals_evaluated || 0} signals evaluated · ${s.trades_filled || 0} filled · ${s.trades_rejected || 0} rejected</span>
+  <span>paper trading — simulated fills against live market data, no real capital at risk</span>
+`;
+</script>

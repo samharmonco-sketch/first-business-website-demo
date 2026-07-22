@@ -1,0 +1,8 @@
+.env
+trading_bot/data/*.json
+trading_bot/data/logs/*.jsonl
+trading_bot/data/*.pem
+__pycache__/
+*.pyc
+.venv/
+KILL_SWITCH
