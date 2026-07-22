@@ -1,0 +1,17 @@
+services:
+  trading-bot:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: trading-bot
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    volumes:
+      - ../data:/app/data
+      - ../logs:/app/logs
+      - ../secrets:/app/secrets:ro
+      - ../config:/app/config:ro
+    # Restart resilience: `restart: unless-stopped` brings the container
+    # back after a crash or host reboot (as long as the Docker daemon
+    # itself starts on boot, which is the default on most systemd distros).

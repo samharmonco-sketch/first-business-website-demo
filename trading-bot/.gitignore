@@ -1,0 +1,12 @@
+.env
+secrets/
+*.pem
+data/*.db
+data/KILL_SWITCH
+logs/*.jsonl
+logs/*.log
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/

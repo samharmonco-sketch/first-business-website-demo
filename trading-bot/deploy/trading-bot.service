@@ -1,0 +1,30 @@
+# systemd unit for running the bot directly on a host (no Docker).
+#
+# Install:
+#   sudo cp deploy/trading-bot.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now trading-bot
+#
+# Adjust User, WorkingDirectory, and the venv path below to match your
+# deployment. Logs also go to `journalctl -u trading-bot -f` in addition to
+# the bot's own logs/ directory.
+
+[Unit]
+Description=Autonomous prediction-market trading bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=trading-bot
+WorkingDirectory=/opt/trading-bot
+EnvironmentFile=/opt/trading-bot/.env
+ExecStart=/opt/trading-bot/.venv/bin/python -m tradingbot.main run
+Environment=PYTHONPATH=/opt/trading-bot/src
+Restart=on-failure
+RestartSec=10
+# Restart resilience: systemd restarts the process on crash, and
+# WantedBy=multi-user.target below makes it come back after host reboot.
+
+[Install]
+WantedBy=multi-user.target

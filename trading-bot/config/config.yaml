@@ -1,0 +1,87 @@
+# Trading bot configuration. Secrets (API keys, private key paths) come from
+# environment variables / .env, never hardcoded here. See .env.example.
+
+mode: paper  # paper | live  -- MUST be changed to "live" explicitly, never defaults to live
+
+exchange:
+  name: kalshi
+  # Use Kalshi's demo/sandbox environment for live-mode testing before real money.
+  use_demo: true
+  base_url: "https://api.elections.kalshi.com/trade-api/v2"
+  demo_base_url: "https://demo-api.kalshi.co/trade-api/v2"
+  request_timeout_seconds: 10
+
+polling:
+  interval_seconds: 60
+  # Series/market tickers to watch. Crypto interval markets on Kalshi live
+  # under series like KXBTC (BTC up/down hourly) / KXETH etc. Confirm exact
+  # tickers in the Kalshi market catalog before going live -- these are
+  # illustrative and may need adjusting.
+  crypto_series_tickers:
+    - "KXBTC"
+    - "KXETH"
+  sports_series_tickers: []
+  max_markets_per_cycle: 25
+
+bankroll:
+  starting_bankroll_usd: 1500.00
+  max_position_usd: 50.00
+  max_position_pct_of_bankroll: 0.05
+  max_total_exposure_usd: 300.00
+  daily_loss_limit_usd: 100.00
+  per_market_exposure_usd: 75.00
+  per_strategy_exposure_usd: 150.00
+  min_edge_to_trade: 0.05          # steady-state strategies require >=5% modeled edge
+  min_confidence_to_trade: 0.55
+
+day_one:
+  enabled: true
+  # More permissive thresholds so the very first run produces a real,
+  # small, risk-capped trade instead of an empty log.
+  min_edge_to_trade: 0.02
+  min_confidence_to_trade: 0.50
+  max_position_usd: 5.00
+  max_total_exposure_usd: 15.00
+  # Once a real trade has been executed under day-one mode, it disables
+  # itself permanently (state persisted in data/state.db).
+  disable_after_first_trade: true
+
+strategies:
+  enabled:
+    - dummy_buy         # smoke-test only; keep disabled outside paper-loop testing
+    - crypto_momentum
+    - mispricing
+    - sports_ai
+  dummy_buy:
+    enabled: false
+    size_usd: 1.00
+  crypto_momentum:
+    enabled: true
+    lookback_ticks: 20
+    momentum_threshold: 0.015     # 1.5% move over lookback triggers momentum signal
+    mean_reversion_zscore: 2.0
+  mispricing:
+    enabled: true
+    reference_price_source: coinbase   # coinbase | binance
+    assumed_annualized_volatility: 0.55
+    min_time_to_expiry_seconds: 120
+  sports_ai:
+    enabled: true
+    anthropic_model: "claude-sonnet-5"
+    max_events_per_cycle: 5
+    min_data_confidence: 0.4
+
+risk:
+  kill_switch_file: "data/KILL_SWITCH"
+  state_db_path: "data/state.db"
+
+logging:
+  log_dir: "logs"
+  level: "INFO"
+  decisions_file: "decisions.jsonl"
+  orders_file: "orders.jsonl"
+  account_file: "account.jsonl"
+
+anthropic:
+  model: "claude-sonnet-5"
+  max_tokens: 1024
