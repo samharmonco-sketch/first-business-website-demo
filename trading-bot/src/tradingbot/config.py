@@ -76,6 +76,12 @@ class DayOneConfig:
 
 
 @dataclass
+class ExitsConfig:
+    take_profit_pct: float
+    stop_loss_pct: float
+
+
+@dataclass
 class RiskConfig:
     kill_switch_file: str
     state_db_path: str
@@ -110,6 +116,7 @@ class AppConfig:
     bankroll: BankrollConfig
     day_one: DayOneConfig
     strategies: dict[str, Any]
+    exits: ExitsConfig
     risk: RiskConfig
     logging: LoggingConfig
     anthropic: AnthropicConfig
@@ -146,6 +153,7 @@ def load_config(config_path: str | Path | None = None, root_dir: str | Path | No
     polling = PollingConfig(**raw["polling"])
     bankroll = BankrollConfig(**raw["bankroll"])
     day_one = DayOneConfig(**raw["day_one"])
+    exits = ExitsConfig(**raw["exits"])
     risk = RiskConfig(**raw["risk"])
     logging_cfg = LoggingConfig(**raw["logging"])
     anthropic_raw = raw["anthropic"]
@@ -159,6 +167,7 @@ def load_config(config_path: str | Path | None = None, root_dir: str | Path | No
         bankroll=bankroll,
         day_one=day_one,
         strategies=raw["strategies"],
+        exits=exits,
         risk=risk,
         logging=logging_cfg,
         anthropic=anthropic,

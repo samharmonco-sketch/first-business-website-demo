@@ -42,6 +42,13 @@ bankroll:
   min_edge_to_trade: 0.05          # steady-state strategies require >=5% modeled edge
   min_confidence_to_trade: 0.55
 
+exits:
+  # Active position management: close a position early if it moves this
+  # far from your average entry price, instead of only ever waiting
+  # passively for the underlying Kalshi market to settle at expiry.
+  take_profit_pct: 0.15   # close if price has risen >=15% from entry
+  stop_loss_pct: 0.10     # close if price has fallen >=10% from entry
+
 day_one:
   enabled: true
   # More permissive thresholds so the very first run produces a real,

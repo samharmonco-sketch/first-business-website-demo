@@ -2,15 +2,18 @@
 
 Each cycle:
   1. Settle any open positions whose market has resolved (see settlement.py
-     -- strategies only ever open positions, this is the other half).
-  2. Check kill switch / daily halt (still logs the cycle even if halted).
-  3. Fetch current account state and market snapshot.
-  4. Evaluate every enabled strategy against every relevant market.
-  5. Log every evaluation (trade AND no-trade) with full reasoning/inputs.
-  6. For actionable signals, run them through the RiskManager -- the only
+     -- strategies only ever open positions, this is one of two ways they
+     close).
+  2. Check open positions for take-profit/stop-loss exits (position_manager.py
+     -- the other way a position closes, before expiry, based on price move).
+  3. Check kill switch / daily halt (still logs the cycle even if halted).
+  4. Fetch current account state and market snapshot.
+  5. Evaluate every enabled strategy against every relevant market.
+  6. Log every evaluation (trade AND no-trade) with full reasoning/inputs.
+  7. For actionable signals, run them through the RiskManager -- the only
      path by which an order can reach the exchange adapter.
-  7. Place approved orders, log the result, update state.
-  8. Log an account snapshot (balance/exposure/PnL) for observability.
+  8. Place approved orders, log the result, update state.
+  9. Log an account snapshot (balance/exposure/PnL) for observability.
 
 This module has zero exchange-specific or strategy-specific logic --
 new strategies (registry.py) and new exchanges (adapters/) plug in without
@@ -30,6 +33,7 @@ from ..risk.manager import RiskManager
 from ..state_store import StateStore
 from ..strategies.base import Strategy
 from ..strategies.sports_ai import SportsAIStrategy
+from .position_manager import check_exits
 from .settlement import settle_expired_positions
 
 
@@ -77,6 +81,11 @@ class ExecutionEngine:
         settled = settle_expired_positions(self.adapter, self.store, self.logs)
         if settled:
             self.logs.logger.info(f"[cycle {cycle_id}] settled {settled} expired position(s)")
+
+        exited = check_exits(self.adapter, self.store, self.logs, cycle_id,
+                              self.config.exits.take_profit_pct, self.config.exits.stop_loss_pct)
+        if exited:
+            self.logs.logger.info(f"[cycle {cycle_id}] exited {exited} position(s) via take-profit/stop-loss")
 
         if self.risk_manager.kill_switch.is_active():
             self.logs.log_decision(

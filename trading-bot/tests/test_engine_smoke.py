@@ -6,7 +6,7 @@ from tradingbot.adapters.base import ExchangeAdapter
 from tradingbot.adapters.paper import PaperTradingAdapter
 from tradingbot.config import (
     AnthropicConfig, AppConfig, BankrollConfig, DayOneConfig, ExchangeConfig,
-    LoggingConfig, OddsApiConfig, PollingConfig, RiskConfig,
+    ExitsConfig, LoggingConfig, OddsApiConfig, PollingConfig, RiskConfig,
 )
 from tradingbot.engine.execution import ExecutionEngine
 from tradingbot.logging_setup import BotLogs
@@ -48,6 +48,7 @@ def make_config(tmp_path):
     )
     day_one = DayOneConfig(enabled=True, min_edge_to_trade=0.02, min_confidence_to_trade=0.50,
                             max_position_usd=5.0, max_total_exposure_usd=15.0, disable_after_first_trade=True)
+    exits = ExitsConfig(take_profit_pct=0.15, stop_loss_pct=0.10)
     risk = RiskConfig(kill_switch_file="KILL_SWITCH", state_db_path="state.db")
     logging_cfg = LoggingConfig(log_dir="logs", level="INFO", decisions_file="decisions.jsonl",
                                  orders_file="orders.jsonl", account_file="account.jsonl")
@@ -57,7 +58,7 @@ def make_config(tmp_path):
         "dummy_buy": {"enabled": True, "size_usd": 3.0},
     }
     return AppConfig(mode="paper", exchange=exchange, polling=polling, bankroll=bankroll,
-                      day_one=day_one, strategies=strategies_cfg, risk=risk,
+                      day_one=day_one, strategies=strategies_cfg, exits=exits, risk=risk,
                       logging=logging_cfg, anthropic=anthropic, odds_api=OddsApiConfig(api_key=""),
                       root_dir=tmp_path)
 
