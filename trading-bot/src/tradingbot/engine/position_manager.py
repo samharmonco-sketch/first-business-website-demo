@@ -30,6 +30,16 @@ def check_exits(adapter: ExchangeAdapter, store: StateStore, logs: BotLogs, cycl
         market = adapter.get_market(ticker)
         if market is None:
             continue
+        if market.status != "active":
+            # Trading has halted on this market (it's past its close_time,
+            # awaiting settlement) -- there is no live order book anymore,
+            # so Kalshi returns 0 for yes_bid/no_bid. That 0 is an absent
+            # quote, not a real price crash: mark-to-market against it
+            # would read as an instant, fake -100% stop-loss on a position
+            # that hasn't actually been determined to be a loser yet.
+            # settle_expired_positions() (runs before this, each cycle)
+            # is what correctly closes it once Kalshi posts a real result.
+            continue
 
         side = Side(side_str)
         # Mark-to-market at the price you could actually sell at right now.

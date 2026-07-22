@@ -1,3 +1,5 @@
+import time
+
 from tradingbot.adapters.base import ExchangeAdapter
 from tradingbot.adapters.paper import PaperTradingAdapter
 from tradingbot.engine.position_manager import check_exits
@@ -96,3 +98,25 @@ def test_no_exit_when_no_position(tmp_path):
     exited = check_exits(adapter, store, logs, "cycle1", take_profit_pct=0.15, stop_loss_pct=0.10)
 
     assert exited == 0
+
+
+def test_no_exit_on_closed_market_with_zero_bid(tmp_path):
+    """Regression test: a market past its close_time but not yet settled
+    has no live order book -- Kalshi returns yes_bid=0/no_bid=0 for it.
+    That must NOT be read as a real -100% stop-loss (a real production
+    incident: two positions both "exited" at exactly -100% the instant
+    their markets closed, wiping most of the paper bankroll on a data
+    artifact rather than an actual price move)."""
+    store = make_store(tmp_path)
+    logs = make_logs(tmp_path)
+    store.upsert_position("KXBTC-TEST", "yes", "mispricing", 10, 0.40)
+    closed_market = Market(ticker="KXBTC-TEST", series_ticker="KXBTC", title="test",
+                            yes_bid=0.0, yes_ask=0.0, no_bid=0.0, no_ask=0.0,
+                            volume=10, close_ts=time.time() - 60, status="closed")
+    market_data = FakeMarketDataAdapter({"KXBTC-TEST": closed_market})
+    adapter = PaperTradingAdapter(market_data, store, logs=logs)
+
+    exited = check_exits(adapter, store, logs, "cycle1", take_profit_pct=0.15, stop_loss_pct=0.10)
+
+    assert exited == 0
+    assert len(store.get_positions()) == 1
