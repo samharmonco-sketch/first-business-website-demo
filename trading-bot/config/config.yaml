@@ -86,8 +86,15 @@ strategies:
     max_events_per_cycle: 5
     min_data_confidence: 0.4
     # Match window (hours) between a TheOddsAPI event's commence_time and a
-    # Kalshi market's close_time to consider them the same event.
-    match_window_hours: 12.0
+    # Kalshi market's close_time to consider them the same event. Kalshi's
+    # close_time is NOT the game's kickoff/first-pitch time -- a real
+    # diagnostic against the demo environment showed a consistent ~72-76
+    # hour gap (settlement buffer), confirmed across both NFL and MLB
+    # markets. 96 gives margin; the matcher also picks the closest game by
+    # time within this window rather than requiring a single unique hit,
+    # so a wide window doesn't cause it to grab the wrong game out of a
+    # back-to-back series.
+    match_window_hours: 96.0
     # Kalshi series ticker -> TheOddsAPI sport key. Add leagues here as you
     # confirm the correct Kalshi series ticker for them.
     series_to_sport_key:

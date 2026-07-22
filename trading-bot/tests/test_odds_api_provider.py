@@ -90,7 +90,7 @@ def test_match_kalshi_market_ambiguous_when_both_teams_in_title():
 
 def test_match_kalshi_market_rejects_outside_time_window():
     now = time.time()
-    market = make_kalshi_market("KXNBA-LAL-BOS", "Will the Lakers win?", now + 100000)  # far in the future
+    market = make_kalshi_market("KXNBA-LAL-BOS", "Will the Lakers win?", now + 10 * 86400)  # 10 days out, past the 96h window
     provider = make_provider([market])
     raw_event = {
         "id": "evt1", "home_team": "Los Angeles Lakers", "away_team": "Boston Celtics",
@@ -98,6 +98,70 @@ def test_match_kalshi_market_rejects_outside_time_window():
     }
     result = provider._match_kalshi_market(raw_event, [market])
     assert result is None
+
+
+def test_match_kalshi_market_uses_city_name_not_mascot():
+    """Realistic case discovered against Kalshi's real demo environment:
+    titles/sub_titles name teams by city only ("Carolina"), never by
+    mascot ("Panthers") -- matching must work off the full team name."""
+    now = time.time()
+    market = make_kalshi_market(
+        "KXNFLGAME-CARARI-CAR", "Will Carolina win the Carolina vs Arizona Pro Football game?",
+        now + 3 * 86400, raw={"yes_sub_title": "Carolina"},  # Kalshi's real ~72h settlement buffer
+    )
+    provider = make_provider([market])
+    raw_event = {
+        "id": "evt1", "home_team": "Carolina Panthers", "away_team": "Arizona Cardinals",
+        "commence_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
+    }
+    result = provider._match_kalshi_market(raw_event, [market])
+    assert result is not None
+    matched_market, yes_team = result
+    assert matched_market.ticker == "KXNFLGAME-CARARI-CAR"
+    assert yes_team == "Carolina Panthers"
+
+
+def test_match_kalshi_market_picks_closest_game_in_back_to_back_series():
+    """Two teams playing consecutive games (common in MLB) each have their
+    own market -- the matcher must pick the one whose close_time is
+    actually closest to this event's commence_time, not just any team
+    match within the (now wide) window."""
+    now = time.time()
+    right_game = make_kalshi_market(
+        "KXMLB-KC-DET-G1", "Kansas City vs Detroit", now + 3 * 86400,
+        raw={"yes_sub_title": "Kansas City"},
+    )
+    other_game_next_day = make_kalshi_market(
+        "KXMLB-KC-DET-G2", "Kansas City vs Detroit", now + 4 * 86400,
+        raw={"yes_sub_title": "Kansas City"},
+    )
+    provider = make_provider([right_game, other_game_next_day])
+    raw_event = {
+        "id": "evt1", "home_team": "Kansas City Royals", "away_team": "Detroit Tigers",
+        "commence_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
+    }
+    result = provider._match_kalshi_market(raw_event, [right_game, other_game_next_day])
+    assert result is not None
+    matched_market, yes_team = result
+    assert matched_market.ticker == "KXMLB-KC-DET-G1"
+    assert yes_team == "Kansas City Royals"
+
+
+def test_match_kalshi_market_home_away_variants_of_same_game_not_ambiguous():
+    """Kalshi lists two markets per game (one yes-side per team), both with
+    the same close_time -- that pairing must NOT be treated as ambiguous."""
+    now = time.time()
+    home_market = make_kalshi_market("KXNFL-CAR", "Carolina vs Arizona", now + 3 * 86400,
+                                      raw={"yes_sub_title": "Carolina"})
+    away_market = make_kalshi_market("KXNFL-ARI", "Carolina vs Arizona", now + 3 * 86400,
+                                      raw={"yes_sub_title": "Arizona"})
+    provider = make_provider([home_market, away_market])
+    raw_event = {
+        "id": "evt1", "home_team": "Carolina Panthers", "away_team": "Arizona Cardinals",
+        "commence_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
+    }
+    result = provider._match_kalshi_market(raw_event, [home_market, away_market])
+    assert result is not None
 
 
 def test_get_event_data_devigs_moneylines():

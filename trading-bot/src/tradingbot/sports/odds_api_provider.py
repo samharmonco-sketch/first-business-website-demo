@@ -71,7 +71,7 @@ def _parse_iso(ts: str) -> float:
 class TheOddsAPIProvider(SportsDataProvider):
     def __init__(self, api_key: str, market_data_adapter: ExchangeAdapter,
                  series_to_sport_key: dict | None = None, regions: str = "us",
-                 markets: str = "h2h", match_window_hours: float = 12.0):
+                 markets: str = "h2h", match_window_hours: float = 96.0):
         if not api_key:
             raise RuntimeError("ODDS_API_KEY not set; cannot use TheOddsAPIProvider.")
         self.api_key = api_key
@@ -128,11 +128,18 @@ class TheOddsAPIProvider(SportsDataProvider):
         except (ValueError, KeyError):
             return None
 
-        candidates = []
+        # Kalshi's close_time is NOT the game's kickoff/first-pitch time --
+        # a real diagnostic against the demo environment showed a
+        # consistent ~72-76 hour gap between a game's real commence_time
+        # and its Kalshi market's close_time (settlement buffer). So we
+        # can't reject on a tight window; instead take every team-name
+        # match within match_window_hours and pick whichever is CLOSEST in
+        # time, which correctly picks a specific game out of a back-to-back
+        # series (teams often play the same opponent on consecutive days).
+        candidates = []  # (delta_seconds, market, yes_team)
+        window_seconds = self.match_window_hours * 3600
         for market in kalshi_markets:
-            window_seconds = self.match_window_hours * 3600
-            if abs(market.close_ts - commence_ts) > window_seconds:
-                continue
+            yes_team = None
 
             # Prefer Kalshi's yes_sub_title (a plain-language description of
             # what YES means for this specific market), when present, over
@@ -143,26 +150,41 @@ class TheOddsAPIProvider(SportsDataProvider):
             if yes_sub_title:
                 home_in, away_in = _team_in_text(home_tokens, yes_sub_title), _team_in_text(away_tokens, yes_sub_title)
                 if home_in and not away_in:
-                    candidates.append((market, raw_event["home_team"]))
-                    continue
-                if away_in and not home_in:
-                    candidates.append((market, raw_event["away_team"]))
-                    continue
+                    yes_team = raw_event["home_team"]
+                elif away_in and not home_in:
+                    yes_team = raw_event["away_team"]
                 # yes_sub_title present but didn't resolve it -- fall through
                 # to the title heuristic rather than giving up immediately.
 
-            title_lower = (market.title or "").lower()
-            home_in, away_in = _team_in_text(home_tokens, title_lower), _team_in_text(away_tokens, title_lower)
-            if home_in and not away_in:
-                candidates.append((market, raw_event["home_team"]))
-            elif away_in and not home_in:
-                candidates.append((market, raw_event["away_team"]))
-            # else: neither, or both, mentioned -- can't tell which side is
-            # YES from title alone; skip this market rather than guess.
+            if yes_team is None:
+                title_lower = (market.title or "").lower()
+                home_in, away_in = _team_in_text(home_tokens, title_lower), _team_in_text(away_tokens, title_lower)
+                if home_in and not away_in:
+                    yes_team = raw_event["home_team"]
+                elif away_in and not home_in:
+                    yes_team = raw_event["away_team"]
+                # else: neither, or both, mentioned -- can't tell which side
+                # is YES from title alone; skip this market rather than guess.
 
-        if len(candidates) == 1:
-            return candidates[0]
-        return None  # zero or ambiguous multiple matches -- skip rather than guess
+            if yes_team is None:
+                continue
+            delta = abs(market.close_ts - commence_ts)
+            if delta > window_seconds:
+                continue
+            candidates.append((delta, market, yes_team))
+
+        if not candidates:
+            return None
+        candidates.sort(key=lambda c: c[0])
+        best_delta, best_market, best_yes_team = candidates[0]
+        # Two markets sharing the same close_ts are just the home/away
+        # yes-variants of the SAME game -- not ambiguous. Only bail if a
+        # second, comparably-close candidate is for a genuinely different
+        # game (different close_ts), since we can't tell which one is real.
+        if len(candidates) > 1 and candidates[1][0] < best_delta + 3600 \
+                and candidates[1][1].close_ts != best_market.close_ts:
+            return None
+        return best_market, best_yes_team
 
     def get_event_data(self, event: SportsEvent) -> SportsEventData:
         raw = self._raw_by_event_id.get(event.event_id)
