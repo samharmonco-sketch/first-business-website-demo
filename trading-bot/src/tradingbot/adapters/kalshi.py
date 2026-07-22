@@ -128,16 +128,19 @@ class KalshiAdapter(ExchangeAdapter):
 
     @staticmethod
     def _parse_market(m: dict, series_ticker: str) -> Market:
-        # Kalshi quotes prices in cents (1-99); convert to dollars (0-1).
+        # Kalshi's real /markets response quotes yes/no bid/ask as decimal-
+        # dollar strings (e.g. "yes_ask_dollars": "0.0000"), already in the
+        # 0-1 range -- confirmed against a live demo response. There is no
+        # cents-integer "yes_bid"/"yes_ask" field; volume is "volume_fp".
         return Market(
             ticker=m["ticker"],
-            series_ticker=series_ticker,
+            series_ticker=series_ticker or m.get("event_ticker", ""),
             title=m.get("title", m["ticker"]),
-            yes_bid=m.get("yes_bid", 0) / 100.0,
-            yes_ask=m.get("yes_ask", 100) / 100.0,
-            no_bid=m.get("no_bid", 0) / 100.0,
-            no_ask=m.get("no_ask", 100) / 100.0,
-            volume=m.get("volume", 0),
+            yes_bid=float(m.get("yes_bid_dollars") or 0),
+            yes_ask=float(m.get("yes_ask_dollars") or 1),
+            no_bid=float(m.get("no_bid_dollars") or 0),
+            no_ask=float(m.get("no_ask_dollars") or 1),
+            volume=float(m.get("volume_fp") or 0),
             close_ts=_parse_close_time(m.get("close_time")),
             status=m.get("status", "unknown"),
             raw=m,
