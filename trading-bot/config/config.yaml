@@ -36,7 +36,8 @@ bankroll:
   max_position_usd: 50.00
   max_position_pct_of_bankroll: 0.05
   max_total_exposure_usd: 300.00
-  daily_loss_limit_usd: 100.00
+  daily_loss_limit_usd: 100000.00  # effectively disabled for paper-mode observation; restore a real
+                                    # limit (e.g. 100.00) before ever running mode: live
   per_market_exposure_usd: 75.00
   per_strategy_exposure_usd: 150.00
   min_edge_to_trade: 0.05          # steady-state strategies require >=5% modeled edge
