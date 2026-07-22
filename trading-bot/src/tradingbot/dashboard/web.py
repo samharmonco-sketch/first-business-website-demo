@@ -11,6 +11,7 @@ from __future__ import annotations
 import html
 import http.server
 import socketserver
+import time
 
 from ..adapters.base import ExchangeAdapter
 from ..logging_setup import BotLogs
@@ -29,11 +30,41 @@ def _badge(text: str, color: str) -> str:
     )
 
 
-def _render_html(adapter: ExchangeAdapter, store: StateStore, risk_manager: RiskManager, logs: BotLogs) -> str:
+def _heartbeat(logs: BotLogs, poll_interval_seconds: int) -> tuple[str, str]:
+    """Every poll cycle writes at least one decision, whether it trades,
+    holds, or is halted -- so the newest decision's timestamp is a
+    reliable "is the bot loop actually alive" signal, independent of
+    whether anything traded recently."""
+    latest = logs.decisions.tail(1)
+    if not latest:
+        return "no cycles logged yet", "#cf222e"
+
+    age_seconds = time.time() - latest[0].get("ts", 0)
+    if age_seconds < 0:
+        age_seconds = 0
+    if age_seconds < 60:
+        age_text = f"{age_seconds:.0f}s ago"
+    elif age_seconds < 3600:
+        age_text = f"{age_seconds / 60:.0f}m ago"
+    else:
+        age_text = f"{age_seconds / 3600:.1f}h ago"
+
+    if age_seconds <= poll_interval_seconds * 2:
+        color = "#1a7f37"  # green -- on schedule
+    elif age_seconds <= poll_interval_seconds * 5:
+        color = "#9a6700"  # amber -- running late, not necessarily dead
+    else:
+        color = "#cf222e"  # red -- likely stopped (asleep, crashed, laptop closed)
+    return f"last cycle: {age_text}", color
+
+
+def _render_html(adapter: ExchangeAdapter, store: StateStore, risk_manager: RiskManager, logs: BotLogs,
+                  poll_interval_seconds: int = 60) -> str:
     account = adapter.get_account_state()
     positions = account.positions
     open_orders = store.get_open_orders()
     decisions = list(reversed(logs.decisions.tail(50)))
+    heartbeat_text, heartbeat_color = _heartbeat(logs, poll_interval_seconds)
 
     kill_active = risk_manager.kill_switch.is_active()
     halted = store.is_daily_halted()
@@ -99,7 +130,7 @@ def _render_html(adapter: ExchangeAdapter, store: StateStore, risk_manager: Risk
 <body>
   <h1>Trading Bot Dashboard</h1>
   <div class="sub">Mode: {mode_label} &middot; auto-refreshes every 5s &middot; this tab is read-only, it never places orders</div>
-  <div class="badges">{status_badges}</div>
+  <div class="badges">{_badge(heartbeat_text, heartbeat_color)}{status_badges}</div>
 
   <div class="stats">
     <div class="stat"><div class="label">Balance</div><div class="value">{_fmt_money(account.balance_usd)}</div></div>
@@ -130,10 +161,10 @@ def _render_html(adapter: ExchangeAdapter, store: StateStore, risk_manager: Risk
 
 
 def run_server(adapter: ExchangeAdapter, store: StateStore, risk_manager: RiskManager, logs: BotLogs,
-               port: int = 8765) -> None:
+               port: int = 8765, poll_interval_seconds: int = 60) -> None:
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_GET(self) -> None:
-            body = _render_html(adapter, store, risk_manager, logs).encode("utf-8")
+            body = _render_html(adapter, store, risk_manager, logs, poll_interval_seconds).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
