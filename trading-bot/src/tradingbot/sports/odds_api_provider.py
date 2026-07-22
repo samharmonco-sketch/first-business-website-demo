@@ -17,6 +17,7 @@ odds-implied probability and recent line movement.
 from __future__ import annotations
 
 import datetime
+import re
 
 import requests
 
@@ -44,8 +45,23 @@ def _american_odds_to_prob(odds: float) -> float:
     return 100 / (odds + 100)
 
 
-def _nickname(team_name: str) -> str:
-    return team_name.strip().split(" ")[-1].lower()
+_STOPWORDS = {"the", "of", "fc"}
+
+
+def _team_tokens(team_name: str) -> set[str]:
+    # Kalshi market titles/sub-titles are inconsistent about whether they
+    # name a team by its city ("Carolina", "Kansas City") or its mascot
+    # ("Panthers") -- e.g. real Kalshi NFL/MLB/NBA/NHL titles observed in
+    # production use city names exclusively, with no mascot mentioned at
+    # all. Matching on the mascot alone (the old approach) silently never
+    # matches those. Collect every word from the full team name instead,
+    # so a hit on city OR mascot resolves the match.
+    words = team_name.strip().lower().replace(".", "").split(" ")
+    return {w for w in words if w and w not in _STOPWORDS}
+
+
+def _team_in_text(tokens: set[str], text: str) -> bool:
+    return any(re.search(rf"\b{re.escape(tok)}\b", text) for tok in tokens)
 
 
 def _parse_iso(ts: str) -> float:
@@ -105,7 +121,8 @@ class TheOddsAPIProvider(SportsDataProvider):
         return events
 
     def _match_kalshi_market(self, raw_event: dict, kalshi_markets: list[Market]) -> tuple[Market, str] | None:
-        home_nick, away_nick = _nickname(raw_event["home_team"]), _nickname(raw_event["away_team"])
+        home_tokens = _team_tokens(raw_event["home_team"])
+        away_tokens = _team_tokens(raw_event["away_team"])
         try:
             commence_ts = _parse_iso(raw_event["commence_time"])
         except (ValueError, KeyError):
@@ -124,7 +141,7 @@ class TheOddsAPIProvider(SportsDataProvider):
             # below can never disambiguate.
             yes_sub_title = ((market.raw or {}).get("yes_sub_title") or "").lower()
             if yes_sub_title:
-                home_in, away_in = home_nick in yes_sub_title, away_nick in yes_sub_title
+                home_in, away_in = _team_in_text(home_tokens, yes_sub_title), _team_in_text(away_tokens, yes_sub_title)
                 if home_in and not away_in:
                     candidates.append((market, raw_event["home_team"]))
                     continue
@@ -135,7 +152,7 @@ class TheOddsAPIProvider(SportsDataProvider):
                 # to the title heuristic rather than giving up immediately.
 
             title_lower = (market.title or "").lower()
-            home_in, away_in = home_nick in title_lower, away_nick in title_lower
+            home_in, away_in = _team_in_text(home_tokens, title_lower), _team_in_text(away_tokens, title_lower)
             if home_in and not away_in:
                 candidates.append((market, raw_event["home_team"]))
             elif away_in and not home_in:
