@@ -44,7 +44,12 @@ def build_runtime(config_path: str | None = None):
         logs.logger.info("MODE=PAPER -- simulated fills against live market data. No real orders will be placed.")
 
     risk_manager = RiskManager(config.bankroll, config.day_one, config.risk, store, config.root_dir)
-    strategies = build_strategies(config.strategies, anthropic_config=config.anthropic, log_dir=log_dir)
+    # sports_ai always looks up Kalshi market prices via the read-only public
+    # market-data adapter, even in live mode -- it never needs auth for this.
+    strategies = build_strategies(
+        config.strategies, anthropic_config=config.anthropic, log_dir=log_dir,
+        odds_api_key=config.odds_api.api_key, market_data_adapter=market_data_adapter,
+    )
 
     engine = ExecutionEngine(config, adapter, strategies, risk_manager, store, logs)
     return config, adapter, store, risk_manager, logs, engine

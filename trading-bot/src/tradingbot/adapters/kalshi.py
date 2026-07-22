@@ -116,6 +116,16 @@ class KalshiAdapter(ExchangeAdapter):
                 out.append(self._parse_market(m, series_ticker))
         return out
 
+    def get_market(self, ticker: str) -> Market | None:
+        try:
+            data = self._request("GET", f"/markets/{ticker}")
+        except RuntimeError:
+            return None
+        m = data.get("market")
+        if not m:
+            return None
+        return self._parse_market(m, m.get("series_ticker", ""))
+
     @staticmethod
     def _parse_market(m: dict, series_ticker: str) -> Market:
         # Kalshi quotes prices in cents (1-99); convert to dollars (0-1).

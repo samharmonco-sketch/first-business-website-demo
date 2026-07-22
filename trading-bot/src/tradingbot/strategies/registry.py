@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ..adapters.base import ExchangeAdapter
 from .base import Strategy
 from .crypto_momentum import CryptoMomentumStrategy
 from .dummy_buy import DummyAlwaysSmallBuyStrategy
@@ -20,7 +21,21 @@ STRATEGY_REGISTRY: dict[str, type[Strategy]] = {
 }
 
 
-def build_strategies(strategies_config: dict, anthropic_config=None, log_dir: Path | None = None) -> list[Strategy]:
+def _build_sports_data_provider(params: dict, odds_api_key: str, market_data_adapter: ExchangeAdapter | None):
+    if not odds_api_key or market_data_adapter is None:
+        from ..sports.data_sources import StubSportsDataProvider
+        return StubSportsDataProvider()
+    from ..sports.odds_api_provider import TheOddsAPIProvider
+    return TheOddsAPIProvider(
+        api_key=odds_api_key,
+        market_data_adapter=market_data_adapter,
+        series_to_sport_key=params.get("series_to_sport_key"),
+        match_window_hours=float(params.get("match_window_hours", 12.0)),
+    )
+
+
+def build_strategies(strategies_config: dict, anthropic_config=None, log_dir: Path | None = None,
+                      odds_api_key: str = "", market_data_adapter: ExchangeAdapter | None = None) -> list[Strategy]:
     enabled_names = strategies_config.get("enabled", [])
     instances: list[Strategy] = []
     for name in enabled_names:
@@ -31,7 +46,11 @@ def build_strategies(strategies_config: dict, anthropic_config=None, log_dir: Pa
         if not params.get("enabled", True):
             continue
         if name == "sports_ai":
-            instances.append(cls(params, anthropic_config=anthropic_config, log_dir=log_dir))
+            data_provider = _build_sports_data_provider(params, odds_api_key, market_data_adapter)
+            instances.append(cls(
+                params, anthropic_config=anthropic_config, log_dir=log_dir,
+                data_provider=data_provider, market_data_adapter=market_data_adapter,
+            ))
         else:
             instances.append(cls(params))
     return instances

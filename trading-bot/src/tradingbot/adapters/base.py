@@ -22,6 +22,10 @@ class ExchangeAdapter(ABC):
         """Return currently open markets for the given series tickers."""
 
     @abstractmethod
+    def get_market(self, ticker: str) -> Market | None:
+        """Return a single market by its exact ticker, or None if not found."""
+
+    @abstractmethod
     def get_account_state(self) -> AccountState:
         """Return current balance, positions, and open orders."""
 

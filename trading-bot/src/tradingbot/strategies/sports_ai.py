@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ..adapters.base import ExchangeAdapter
 from ..config import AnthropicConfig
 from ..models import AccountState, Market, Signal, SignalAction
 from ..sports.analyzer import SportsAnalyzer
@@ -27,11 +28,13 @@ class SportsAIStrategy(Strategy):
     name = "sports_ai"
 
     def __init__(self, params: dict, anthropic_config: AnthropicConfig | None = None,
-                 data_provider: SportsDataProvider | None = None, log_dir: Path | None = None):
+                 data_provider: SportsDataProvider | None = None, log_dir: Path | None = None,
+                 market_data_adapter: ExchangeAdapter | None = None):
         super().__init__(params)
         self.max_events_per_cycle = int(params.get("max_events_per_cycle", 5))
         self.min_data_confidence = float(params.get("min_data_confidence", 0.4))
         self.data_provider = data_provider or StubSportsDataProvider()
+        self.market_data_adapter = market_data_adapter
         self._anthropic_config = anthropic_config
         self._analyzer = None
         self._log_dir = log_dir or Path("logs")
@@ -85,6 +88,25 @@ class SportsAIStrategy(Strategy):
                 ))
                 continue
 
+            # The edge comparison MUST be against the actual Kalshi market's
+            # current price, not any sportsbook odds (those are only LLM
+            # input context) -- fetch the live market for this event's ticker.
+            if self.market_data_adapter is None:
+                signals.append(Signal(
+                    strategy_name=self.name, ticker=event.market_ticker, action=SignalAction.HOLD,
+                    size_usd=0.0, confidence=0.0, edge=0.0,
+                    reasoning="no market_data_adapter configured; cannot fetch Kalshi market price for edge comparison",
+                ))
+                continue
+            kalshi_market = self.market_data_adapter.get_market(event.market_ticker)
+            if kalshi_market is None:
+                signals.append(Signal(
+                    strategy_name=self.name, ticker=event.market_ticker, action=SignalAction.HOLD,
+                    size_usd=0.0, confidence=0.0, edge=0.0,
+                    reasoning=f"could not fetch Kalshi market {event.market_ticker}; may be closed or ticker mismatch",
+                ))
+                continue
+
             analyzer = self._get_analyzer()
             result = analyzer.analyze(data)
             if result is None:
@@ -95,21 +117,12 @@ class SportsAIStrategy(Strategy):
                 ))
                 continue
 
-            implied_prob = data.sportsbook_odds.get("market_implied_probability")
-            if implied_prob is None:
-                signals.append(Signal(
-                    strategy_name=self.name, ticker=event.market_ticker, action=SignalAction.HOLD,
-                    size_usd=0.0, confidence=0.0, edge=0.0,
-                    reasoning="no market implied probability available to compare against AI estimate",
-                    inputs={"ai_probability": result.probability, "ai_confidence": result.confidence},
-                ))
-                continue
-
+            implied_prob = kalshi_market.implied_yes_probability
             edge = result.probability - implied_prob
             confidence = result.confidence
-            reasoning = (f"AI estimate: P(outcome)={result.probability:.3f} (confidence {confidence:.2f}) "
-                         f"vs market implied {implied_prob:.3f} -> edge {edge:+.3f}. "
-                         f"Claude reasoning: {result.reasoning}")
+            reasoning = (f"AI estimate: P({event.outcome_description})={result.probability:.3f} "
+                         f"(confidence {confidence:.2f}) vs Kalshi market implied {implied_prob:.3f} "
+                         f"({event.market_ticker}) -> edge {edge:+.3f}. Claude reasoning: {result.reasoning}")
 
             if edge > 0:
                 action = SignalAction.BUY_YES
@@ -123,6 +136,8 @@ class SportsAIStrategy(Strategy):
                 strategy_name=self.name, ticker=event.market_ticker, action=action,
                 size_usd=size_usd, confidence=confidence, edge=abs(edge), reasoning=reasoning,
                 inputs={"ai_probability": result.probability, "ai_confidence": result.confidence,
-                        "market_implied_probability": implied_prob, "prompt": result.prompt[:2000]},
+                        "kalshi_implied_probability": implied_prob, "yes_bid": kalshi_market.yes_bid,
+                        "yes_ask": kalshi_market.yes_ask, "no_ask": kalshi_market.no_ask,
+                        "sportsbook_odds": data.sportsbook_odds, "prompt": result.prompt[:2000]},
             ))
         return signals

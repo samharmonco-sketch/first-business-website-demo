@@ -15,6 +15,9 @@ class FakeMarketDataAdapter(ExchangeAdapter):
     def get_markets(self, series_tickers, limit=50):
         return self._markets
 
+    def get_market(self, ticker):
+        return next((m for m in self._markets if m.ticker == ticker), None)
+
     def get_account_state(self):
         raise NotImplementedError
 

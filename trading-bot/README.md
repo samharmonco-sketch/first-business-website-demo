@@ -64,12 +64,16 @@ trading-bot/
       sports_ai.py                     # AI sports strategy (Claude-backed)
     sports/
       data_sources.py                  # pluggable stats/odds/injury provider interface
+      odds_api_provider.py              # real TheOddsAPI-backed provider
       analyzer.py                       # Claude prompt/response, fully audit-logged
     engine/execution.py                 # the autonomous poll/evaluate/risk/trade loop
     dashboard/cli.py                     # status view: positions/orders/decisions/PnL
     main.py                              # CLI: run / once / status / kill / resume
   docker/                                 # Dockerfile + docker-compose.yml
   deploy/trading-bot.service               # systemd unit for bare-metal/VPS deployment
+  scripts/
+    validate_kalshi_demo.py                # standalone Kalshi demo auth + market-data check
+    validate_sports_ai.py                    # standalone real-data sports_ai dry run
   tests/                                    # risk manager + strategy + smoke tests
 ```
 
@@ -86,6 +90,50 @@ cp .env.example .env
 # edit .env: leave KALSHI_* blank for paper mode; fill in ANTHROPIC_API_KEY
 # if you want the sports_ai strategy to actually call Claude.
 ```
+
+## Local validation (do this before trusting the bot with money)
+
+This project was developed in a sandboxed environment whose network policy
+blocks outbound calls to Kalshi, TheOddsAPI, and even plain public price
+feeds -- so the adapter code has never been round-tripped against the real
+APIs. Two standalone scripts let you validate that on your own machine
+(or VPS), where network access is unrestricted:
+
+**1. Kalshi demo auth + market data** -- read-only, places no orders:
+
+```bash
+# In .env: set KALSHI_API_KEY_ID and KALSHI_PRIVATE_KEY_PATH
+# (KALSHI_USE_DEMO is ignored by this script -- it always targets demo)
+python scripts/validate_kalshi_demo.py
+```
+
+Checks (1) public `GET /markets` fetches and parses real KXBTC/KXETH
+market data, and (2) your RSA-PSS signed auth round-trips against
+`GET /portfolio/balance` + `GET /portfolio/positions` on Kalshi's demo
+environment. If step 2 fails with a 401/403, the signing logic in
+`adapters/kalshi.py:_auth_headers` needs a fix -- the error output tells
+you exactly what to check (timestamp units, path format, PSS salt length).
+
+**2. Real sports data + real Claude estimates** -- no orders placed:
+
+```bash
+# In .env: set ODDS_API_KEY and ANTHROPIC_API_KEY
+python scripts/validate_sports_ai.py
+```
+
+Fetches real upcoming events + odds from TheOddsAPI for the leagues in
+`config.yaml`'s `polling.sports_series_tickers`, matches each to a real
+open Kalshi market (by team name + start-time proximity), calls Claude for
+a probability/confidence estimate, and prints every one next to the
+market's actual implied probability so you can sanity-check the reasoning
+-- not just whatever it would have traded. The full prompt/response for
+every call is also written to `logs/sports_audit.jsonl`.
+
+If either script surfaces a bug (wrong field name, auth failure, a
+matching heuristic that never fires for your sport), report the exact
+output back and the adapter/provider code gets fixed from that -- these
+scripts exist specifically to close that loop without needing to touch
+production Kalshi or risk real money to find out.
 
 Review `config/config.yaml` and set your real bankroll/risk numbers under
 `bankroll:` before running anything beyond a smoke test. The shipped
@@ -192,14 +240,28 @@ require no changes.
 
 ## Known limitations / next steps
 
-- **Kalshi wire format unverified live**: see the note above -- confirm
-  against Kalshi's current API reference and the demo environment before
+- **Kalshi wire format unverified live**: see the note above -- run
+  `scripts/validate_kalshi_demo.py` against the demo environment before
   trusting the adapter with real credentials.
-- **sports_ai has no real data source wired in yet**: `StubSportsDataProvider`
-  deliberately returns zero events rather than fabricating placeholder
-  stats/odds that could be mistaken for real ones. Implement
-  `SportsDataProvider` (`sports/data_sources.py`) against a real odds/stats
-  API (TheOddsAPI, SportsDataIO, etc.) to activate it.
+- **sports_ai is wired to TheOddsAPI** (`sports/odds_api_provider.py`) when
+  `ODDS_API_KEY` is set, falling back to a stub that returns zero events
+  (never fabricates placeholder data) otherwise. TheOddsAPI has no
+  team/player stats or injury endpoint, so `home_team_stats`/`away_team_stats`/
+  `injuries` are currently always empty -- Claude's estimate is only as
+  informed as sportsbook odds + whatever's in the prompt. Wire a stats API
+  (SportsDataIO, a league's own API, etc.) into `get_event_data()` for a
+  materially better estimate.
+- **Kalshi<->TheOddsAPI event matching is a heuristic**
+  (`odds_api_provider.py:_match_kalshi_market`): team nickname + start-time
+  window, preferring Kalshi's `yes_sub_title` field when present to
+  disambiguate markets whose title mentions both teams. It was written
+  without live access to real Kalshi sports market titles/fields (network
+  blocked in the dev environment) -- run `scripts/validate_sports_ai.py`
+  and check how many real events actually match; tune the heuristic if
+  match rate is low.
+- **`series_to_sport_key` and `sports_series_tickers` in config.yaml are
+  illustrative** (KXNFL/KXNBA/KXMLB/KXNHL) -- confirm these are Kalshi's
+  actual current sports series tickers before relying on them.
 - **Crypto strike parsing**: `mispricing.py` reads Kalshi's `floor_strike`/
   `cap_strike` fields when present, falling back to regex-parsing the
   market title. Confirm this matches the actual field names Kalshi returns

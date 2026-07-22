@@ -98,6 +98,11 @@ class AnthropicConfig:
 
 
 @dataclass
+class OddsApiConfig:
+    api_key: str = field(default_factory=lambda: os.environ.get("ODDS_API_KEY", ""))
+
+
+@dataclass
 class AppConfig:
     mode: str
     exchange: ExchangeConfig
@@ -108,6 +113,7 @@ class AppConfig:
     risk: RiskConfig
     logging: LoggingConfig
     anthropic: AnthropicConfig
+    odds_api: OddsApiConfig
     root_dir: Path
 
     @property
@@ -144,6 +150,7 @@ def load_config(config_path: str | Path | None = None, root_dir: str | Path | No
     logging_cfg = LoggingConfig(**raw["logging"])
     anthropic_raw = raw["anthropic"]
     anthropic = AnthropicConfig(model=anthropic_raw["model"], max_tokens=anthropic_raw["max_tokens"])
+    odds_api = OddsApiConfig()
 
     cfg = AppConfig(
         mode=mode,
@@ -155,6 +162,7 @@ def load_config(config_path: str | Path | None = None, root_dir: str | Path | No
         risk=risk,
         logging=logging_cfg,
         anthropic=anthropic,
+        odds_api=odds_api,
         root_dir=root,
     )
 

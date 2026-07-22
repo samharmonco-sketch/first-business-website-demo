@@ -6,7 +6,7 @@ from tradingbot.adapters.base import ExchangeAdapter
 from tradingbot.adapters.paper import PaperTradingAdapter
 from tradingbot.config import (
     AnthropicConfig, AppConfig, BankrollConfig, DayOneConfig, ExchangeConfig,
-    LoggingConfig, PollingConfig, RiskConfig,
+    LoggingConfig, OddsApiConfig, PollingConfig, RiskConfig,
 )
 from tradingbot.engine.execution import ExecutionEngine
 from tradingbot.logging_setup import BotLogs
@@ -24,6 +24,9 @@ class MockMarketDataAdapter(ExchangeAdapter):
 
     def get_markets(self, series_tickers, limit=50):
         return self._markets
+
+    def get_market(self, ticker):
+        return next((m for m in self._markets if m.ticker == ticker), None)
 
     def get_account_state(self):
         raise NotImplementedError
@@ -55,7 +58,8 @@ def make_config(tmp_path):
     }
     return AppConfig(mode="paper", exchange=exchange, polling=polling, bankroll=bankroll,
                       day_one=day_one, strategies=strategies_cfg, risk=risk,
-                      logging=logging_cfg, anthropic=anthropic, root_dir=tmp_path)
+                      logging=logging_cfg, anthropic=anthropic, odds_api=OddsApiConfig(api_key=""),
+                      root_dir=tmp_path)
 
 
 def test_first_run_day_one_produces_a_real_trade(tmp_path):

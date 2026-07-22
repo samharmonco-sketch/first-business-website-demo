@@ -34,6 +34,9 @@ class PaperTradingAdapter(ExchangeAdapter):
     def get_markets(self, series_tickers: list[str], limit: int = 50) -> list[Market]:
         return self._market_data_source.get_markets(series_tickers, limit=limit)
 
+    def get_market(self, ticker: str) -> Market | None:
+        return self._market_data_source.get_market(ticker)
+
     def get_account_state(self) -> AccountState:
         balance = self._store.get_balance()
         positions = [

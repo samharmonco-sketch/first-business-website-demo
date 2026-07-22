@@ -33,7 +33,9 @@ class SportsEventData:
     home_team_stats: dict = field(default_factory=dict)
     away_team_stats: dict = field(default_factory=dict)
     injuries: list[str] = field(default_factory=list)
-    sportsbook_odds: dict = field(default_factory=dict)  # e.g. {"home_ml": -140, "away_ml": +120}
+    # Sportsbook odds are LLM input context only (e.g. {"home_moneyline_avg": -140,
+    # "away_moneyline_avg": 120}) -- they are NOT the trade edge comparison.
+    sportsbook_odds: dict = field(default_factory=dict)
     recent_form: dict = field(default_factory=dict)
     data_confidence: float = 1.0  # how much to trust this data (1.0 = real, verified data)
     data_source_note: str = ""
