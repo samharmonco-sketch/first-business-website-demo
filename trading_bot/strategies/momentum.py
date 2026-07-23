@@ -52,7 +52,12 @@ class CryptoMomentumStrategy(Strategy):
         if abs_delta < CONTINUATION_BAND[0]:
             return NoTradeDecision(self.name, market.ticker, f"move too small to act on. {reasoning_base}")
 
-        max_dollars = risk.day_one_max_position_abs if day_one_mode else DEFAULT_TRADE_DOLLARS
+        if day_one_mode:
+            max_dollars = risk.day_one_max_position_abs
+        elif risk.validation_mode_enabled:
+            max_dollars = risk.validation_mode_trade_dollars
+        else:
+            max_dollars = DEFAULT_TRADE_DOLLARS
 
         if CONTINUATION_BAND[0] <= abs_delta <= CONTINUATION_BAND[1]:
             mode = "continuation"

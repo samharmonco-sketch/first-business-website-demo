@@ -108,17 +108,21 @@ def _seconds_to_close(market: MarketSnapshot) -> float | None:
     return (close_dt - datetime.now(timezone.utc)).total_seconds()
 
 
-VOL_LO, VOL_HI = 0.02, 2.5
-# A solution that lands within this margin of either search bound almost
-# always means the market price was degenerate (near 0% or 100%, typically a
-# thinly-traded or just-opened strike) rather than a genuine extreme vol -
-# treat it as "couldn't solve" rather than trusting a nonsense number. A
-# backtest against the batch that caused the original miscalibration found
-# a real gap here: with the old 5.0 upper bound, one solution landed at
-# 323.8% (nowhere near that boundary, but obviously implausible for a
-# ~22h crypto window) and was the single highest-confidence, losing trade -
-# 2.5 is already a very generous ceiling for real short-dated crypto vol.
-VOL_BOUNDARY_MARGIN = 0.10
+# Search range for the bisection - kept wide so it always converges to
+# *some* answer rather than clipping a genuine solution.
+VOL_SEARCH_LO, VOL_SEARCH_HI = 0.02, 5.0
+
+# Separately, a hard plausibility band the *answer* must fall in to be
+# trusted at all, independent of where it landed relative to the search
+# range above. A backtest against the batch that caused the original
+# miscalibration found a real gap when this was only "reject near the
+# search boundary": a solution landed at 323.8% - nowhere near that
+# boundary, but obviously implausible for a ~22h crypto window - and it was
+# the single highest-confidence, losing trade in the counterfactual. Real
+# short-dated crypto implied vol (per the reverse-engineered market prices
+# that motivated this whole fix) runs roughly 8-80%; 200% is already a very
+# generous ceiling, not a tight one.
+PLAUSIBLE_VOL_MIN, PLAUSIBLE_VOL_MAX = 0.05, 2.0
 
 
 def implied_vol_from_price(spot: float, strike: float, direction: str, t_years: float, market_prob_yes: float) -> float | None:
@@ -137,7 +141,7 @@ def implied_vol_from_price(spot: float, strike: float, direction: str, t_years: 
     def f(vol: float) -> float:
         return (ln_sk - 0.5 * vol**2 * t_years) / (vol * sqrt_t) - z_target
 
-    lo, hi = VOL_LO, VOL_HI
+    lo, hi = VOL_SEARCH_LO, VOL_SEARCH_HI
     f_lo = f(lo)
     for _ in range(60):
         mid = (lo + hi) / 2
@@ -147,8 +151,8 @@ def implied_vol_from_price(spot: float, strike: float, direction: str, t_years: 
         else:
             hi = mid
     solved = (lo + hi) / 2
-    if solved <= VOL_LO + VOL_BOUNDARY_MARGIN or solved >= VOL_HI - VOL_BOUNDARY_MARGIN:
-        return None
+    if solved < PLAUSIBLE_VOL_MIN or solved > PLAUSIBLE_VOL_MAX:
+        return None  # rejected on plausibility, regardless of proximity to the search bounds
     return solved
 
 
@@ -250,7 +254,12 @@ class CryptoMispricingStrategy(Strategy):
         if abs(edge) < min_edge:
             return NoTradeDecision(self.name, market.ticker, f"edge {edge:+.3f} below threshold {min_edge:.3f}. {reasoning}")
 
-        max_dollars = risk.day_one_max_position_abs if day_one_mode else DEFAULT_TRADE_DOLLARS
+        if day_one_mode:
+            max_dollars = risk.day_one_max_position_abs
+        elif risk.validation_mode_enabled:
+            max_dollars = risk.validation_mode_trade_dollars
+        else:
+            max_dollars = DEFAULT_TRADE_DOLLARS
         side = Side.YES if edge > 0 else Side.NO
         price_cents = market.yes_ask if side == Side.YES else market.no_ask
         if price_cents <= 0 or price_cents >= 100:

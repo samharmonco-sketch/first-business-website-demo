@@ -119,7 +119,12 @@ class SportsAiStrategy(Strategy):
             reason = f"edge {edge:+.3f} below threshold {min_edge:.3f} or low AI confidence ({result.confidence:.2f}). {reasoning}"
             return NoTradeDecision(self.name, market.ticker, reason)
 
-        max_dollars = risk.day_one_max_position_abs if day_one_mode else DEFAULT_TRADE_DOLLARS
+        if day_one_mode:
+            max_dollars = risk.day_one_max_position_abs
+        elif risk.validation_mode_enabled:
+            max_dollars = risk.validation_mode_trade_dollars
+        else:
+            max_dollars = DEFAULT_TRADE_DOLLARS
         side = Side.YES if edge > 0 else Side.NO
         price_cents = market.yes_ask if side == Side.YES else market.no_ask
         if price_cents <= 0 or price_cents >= 100:

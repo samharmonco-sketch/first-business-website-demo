@@ -41,6 +41,14 @@ class RiskConfig:
     day_one_mode_enabled: bool = True
     take_profit_pct: float = 0.50
     stop_loss_pct: float = 0.40
+    # A deliberately separate, explicitly-labeled mode for re-validating a
+    # strategy after a fix (e.g. the ATM-implied-vol change) - caps every
+    # trade to a small fixed size regardless of stated confidence, so a
+    # calibration table can accumulate real settlements without confidence
+    # being trusted to size positions yet. Off by default; nothing in the
+    # engine enables this on its own.
+    validation_mode_enabled: bool = False
+    validation_mode_trade_dollars: float = 15.0
 
 
 @dataclass(frozen=True)
@@ -96,6 +104,8 @@ def load_config() -> Config:
         day_one_mode_enabled=_bool("DAY_ONE_MODE_ENABLED", True),
         take_profit_pct=_float("TAKE_PROFIT_PCT", 0.50),
         stop_loss_pct=_float("STOP_LOSS_PCT", 0.40),
+        validation_mode_enabled=_bool("VALIDATION_MODE_ENABLED", False),
+        validation_mode_trade_dollars=_float("VALIDATION_MODE_TRADE_DOLLARS", 15.0),
     )
 
     private_key_path = os.getenv("KALSHI_PRIVATE_KEY_PATH", str(DATA_DIR / "kalshi_private_key.pem"))
