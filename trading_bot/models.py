@@ -80,6 +80,7 @@ class Position:
     avg_price_cents: float
     strategy: str
     opened_at: str = field(default_factory=now_iso)
+    confidence: float = 0.0  # size-weighted average of the strategy's stated confidence across fills
 
     def cost_basis(self) -> float:
         return self.contracts * self.avg_price_cents / 100.0

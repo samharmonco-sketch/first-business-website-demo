@@ -35,9 +35,12 @@ class RiskConfig:
     daily_loss_limit_pct: float = 0.15
     max_exposure_per_market_pct: float = 0.10
     max_exposure_per_strategy_pct: float = 0.30
+    max_exposure_per_underlying_pct: float = 0.15
     day_one_max_position_abs: float = 50.0
     day_one_min_edge: float = 0.03
     day_one_mode_enabled: bool = True
+    take_profit_pct: float = 0.50
+    stop_loss_pct: float = 0.40
 
 
 @dataclass(frozen=True)
@@ -87,9 +90,12 @@ def load_config() -> Config:
         daily_loss_limit_pct=_float("DAILY_LOSS_LIMIT_PCT", 0.15),
         max_exposure_per_market_pct=_float("MAX_EXPOSURE_PER_MARKET_PCT", 0.10),
         max_exposure_per_strategy_pct=_float("MAX_EXPOSURE_PER_STRATEGY_PCT", 0.30),
+        max_exposure_per_underlying_pct=_float("MAX_EXPOSURE_PER_UNDERLYING_PCT", 0.15),
         day_one_max_position_abs=_float("DAY_ONE_MAX_POSITION_ABS", 50.0),
         day_one_min_edge=_float("DAY_ONE_MIN_EDGE", 0.03),
         day_one_mode_enabled=_bool("DAY_ONE_MODE_ENABLED", True),
+        take_profit_pct=_float("TAKE_PROFIT_PCT", 0.50),
+        stop_loss_pct=_float("STOP_LOSS_PCT", 0.40),
     )
 
     private_key_path = os.getenv("KALSHI_PRIVATE_KEY_PATH", str(DATA_DIR / "kalshi_private_key.pem"))

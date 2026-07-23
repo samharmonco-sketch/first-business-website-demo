@@ -1,9 +1,11 @@
 """Risk management, enforced in code before every order - not advisory config.
 Every check here can only shrink or reject a signal, never enlarge it. The
 execution engine MUST call check(...) before every single order and skip the
-order entirely on any veto. This is the one place all six risk requirements
+order entirely on any veto. This is the one place all risk requirements
 from the spec live: per-trade cap ($ and %), total exposure cap, daily loss
-halt, per-market cap, per-strategy cap, and the kill switch.
+halt, per-market cap, per-strategy cap, per-underlying-event concentration
+cap (different strikes of the same event are correlated, not independent),
+and the kill switch.
 """
 from __future__ import annotations
 
@@ -69,6 +71,19 @@ class RiskManager:
                 False,
                 f"would breach per-market cap on {signal.ticker}: ${market_exposure:.2f} + ${trade_dollars:.2f} > "
                 f"{risk.max_exposure_per_market_pct:.0%} of equity",
+            )
+
+        # Different strikes of the same underlying (all BTC strikes closing at
+        # the same time, or both team-sides of one game) move together - they
+        # are correlated risk, not independent positions, so they share one
+        # cap tighter than the per-strategy cap.
+        underlying = self.broker.underlying_of(signal.ticker)
+        underlying_exposure = self.broker.exposure_for_underlying(signal.ticker)
+        if underlying_exposure + trade_dollars > equity * risk.max_exposure_per_underlying_pct:
+            return RiskVerdict(
+                False,
+                f"would breach per-underlying-event cap on {underlying}: ${underlying_exposure:.2f} + ${trade_dollars:.2f} > "
+                f"{risk.max_exposure_per_underlying_pct:.0%} of equity",
             )
 
         strategy_exposure = self.broker.exposure_for_strategy(signal.strategy)

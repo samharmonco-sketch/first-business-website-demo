@@ -14,6 +14,7 @@ import base64
 import logging
 import time
 import uuid
+from collections import defaultdict
 
 import requests
 from cryptography.hazmat.primitives import hashes, serialization
@@ -223,8 +224,27 @@ class KalshiAdapter(ExchangeAdapter):
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("sports series %s fetch failed: %s", series_ticker, exc)
                     continue
-                for m in data.get("markets", []):
-                    snapshots.append(self._to_snapshot(m, MarketCategory.SPORTS, {"_sport_key": sport_key}))
+                markets = data.get("markets", [])
+                # Kalshi runs one binary market per team per game, but sets
+                # no_sub_title to the SAME team as yes_sub_title (confirmed
+                # against the live API) - it does NOT identify the opponent.
+                # The only reliable source for "who's the other team" is the
+                # sibling market sharing the same event_ticker, so group by
+                # that and stamp each snapshot with its real opponent name.
+                by_event: dict[str, list[dict]] = defaultdict(list)
+                for m in markets:
+                    by_event[m.get("event_ticker", "")].append(m)
+                for m in markets:
+                    siblings = [
+                        s for s in by_event.get(m.get("event_ticker", ""), []) if s.get("ticker") != m.get("ticker")
+                    ]
+                    opponent = next(
+                        (s.get("yes_sub_title") for s in siblings if s.get("yes_sub_title") != m.get("yes_sub_title")),
+                        None,
+                    )
+                    snapshots.append(
+                        self._to_snapshot(m, MarketCategory.SPORTS, {"_sport_key": sport_key, "_opponent": opponent})
+                    )
 
         return snapshots
 

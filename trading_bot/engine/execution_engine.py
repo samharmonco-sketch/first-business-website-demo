@@ -17,7 +17,7 @@ from ..exchanges.kalshi import KalshiAdapter, KalshiAuthError
 from ..exchanges.paper_broker import PaperBroker
 from ..exchanges.price_history import PriceHistory
 from ..logging_setup import ORDERS_LOG, log_account, log_cycle, log_decision, log_order, read_jsonl
-from ..models import MarketCategory, TradeSignal, now_iso
+from ..models import MarketCategory, OrderAction, TradeSignal, now_iso
 from ..risk.risk_manager import RiskManager
 from ..sports.odds_client import OddsApiClient
 from ..strategies.day_one import DayOneStrategy
@@ -75,7 +75,7 @@ def _execute_signal(ctx: EngineContext, signal: TradeSignal, day_one_mode: bool,
         return
 
     contracts = verdict.adjusted_contracts or signal.size_contracts
-    order = ctx.broker.execute(market, signal.action, signal.side, contracts, signal.strategy)
+    order = ctx.broker.execute(market, signal.action, signal.side, contracts, signal.strategy, signal.confidence)
     order.strategy = signal.strategy
     log_order(asdict(order))
     logger.info(
@@ -88,6 +88,57 @@ def _execute_signal(ctx: EngineContext, signal: TradeSignal, day_one_mode: bool,
         signal.limit_price_cents,
         signal.reasoning[:200],
     )
+
+
+def _check_exits(ctx: EngineContext, markets: list) -> list[dict]:
+    """Take-profit / stop-loss: the only exit path before this was holding
+    every position to expiry. Marks each open position to the current bid
+    (what you'd actually get selling right now, not the more flattering mid)
+    and closes it early if it's moved far enough in either direction. Reuses
+    this cycle's already-fetched market snapshots - no extra API calls.
+    """
+    by_ticker = {m.ticker: m for m in markets}
+    exits = []
+    for key, pos in list(ctx.broker.state.positions.items()):
+        market = by_ticker.get(pos.ticker)
+        if not market:
+            continue
+        current_bid = market.yes_bid if pos.side.value == "yes" else market.no_bid
+        if pos.avg_price_cents <= 0:
+            continue
+        unrealized_pct = (current_bid - pos.avg_price_cents) / pos.avg_price_cents
+
+        if unrealized_pct >= ctx.cfg.risk.take_profit_pct:
+            exit_reason = "take_profit"
+        elif unrealized_pct <= -ctx.cfg.risk.stop_loss_pct:
+            exit_reason = "stop_loss"
+        else:
+            continue
+
+        order = ctx.broker.execute(market, OrderAction.SELL, pos.side, pos.contracts, pos.strategy)
+        order.strategy = pos.strategy
+        log_order(asdict(order))
+        log_decision(
+            {
+                "type": "exit",
+                "exit_reason": exit_reason,
+                "strategy": pos.strategy,
+                "ticker": pos.ticker,
+                "side": pos.side.value,
+                "contracts": pos.contracts,
+                "entry_price_cents": pos.avg_price_cents,
+                "exit_price_cents": current_bid,
+                "unrealized_pct": unrealized_pct,
+                "evaluated_at": now_iso(),
+            }
+        )
+        logger.info(
+            "EXIT %s [%s] %s %s x%d @ %.0fc (entry %.0fc, %+.1f%%)",
+            exit_reason.upper(), pos.strategy, pos.ticker, pos.side.value, pos.contracts, current_bid,
+            pos.avg_price_cents, unrealized_pct * 100,
+        )
+        exits.append({"ticker": pos.ticker, "reason": exit_reason})
+    return exits
 
 
 def run_cycle(ctx: EngineContext | None = None) -> dict:
@@ -127,6 +178,8 @@ def run_cycle(ctx: EngineContext | None = None) -> dict:
     except Exception as exc:  # noqa: BLE001
         errors.append(f"sports market fetch failed: {exc}")
         sports_markets = []
+
+    exits = _check_exits(ctx, crypto_markets + sports_markets)
 
     for market in crypto_markets:
         ctx.history.record(market.ticker, market.implied_yes_prob)
@@ -176,17 +229,19 @@ def run_cycle(ctx: EngineContext | None = None) -> dict:
         "trades_executed": trades_executed,
         "no_trades": no_trades,
         "settlements": len(settlements),
+        "exits": len(exits),
         "errors": errors,
         "equity": ctx.broker.state.equity,
     }
     log_cycle(summary)
     logger.info(
-        "CYCLE done: crypto=%d sports=%d signals=%d trades=%d no_trades=%d errors=%s equity=$%.2f",
+        "CYCLE done: crypto=%d sports=%d signals=%d trades=%d no_trades=%d exits=%d errors=%s equity=$%.2f",
         len(crypto_markets),
         len(sports_markets),
         signals_evaluated,
         trades_executed,
         no_trades,
+        len(exits),
         errors,
         ctx.broker.state.equity,
     )

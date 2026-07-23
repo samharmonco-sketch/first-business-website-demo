@@ -55,7 +55,7 @@ def analyze(client: Anthropic, model: str, event: OddsEvent) -> AiAnalystResult 
     try:
         response = client.messages.create(
             model=model,
-            max_tokens=500,
+            max_tokens=700,
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": prompt}],
         )

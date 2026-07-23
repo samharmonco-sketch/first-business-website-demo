@@ -1,9 +1,16 @@
 """AI sports analysis strategy: Kalshi runs one binary market per team per
 game (confirmed against the live API - "Team A vs Team B Winner?" is actually
-two separate YES/NO markets, one per team, not a single home/away market), so
-matching is done on the market's own yes_sub_title/no_sub_title team names
-against an odds-API event, not on guessing "home vs away" from title word
-order. Every AI prompt/response/parsed-number is logged (via extra) for
+two separate YES/NO markets, one per team, not a single home/away market).
+Kalshi's own no_sub_title field is USELESS for identifying the opponent - it
+is always identical to yes_sub_title (confirmed against the live API), so the
+real opponent name comes from the sibling market sharing the same
+event_ticker, which the Kalshi adapter stamps onto raw['_opponent']. Matching
+requires BOTH this market's team AND its real opponent to correctly pair
+against the same odds-API event's home/away teams - matching on either team
+name alone is exactly what let same-state collisions ("Texas" matching
+"Texas State" in an unrelated game) silently trade the wrong matchup.
+
+Every AI prompt/response/parsed-number is logged (via extra) for
 auditability - requirement #4 explicitly asked to see why the call was made,
 not just the trade.
 """
@@ -51,17 +58,17 @@ class SportsAiStrategy(Strategy):
                 self._event_cache[sport_key] = []
         return self._event_cache[sport_key]
 
-    def _match_event(self, market: MarketSnapshot, yes_team: str, no_team: str) -> OddsEvent | None:
+    def _match_event(self, market: MarketSnapshot, yes_team: str, opponent_team: str) -> OddsEvent | None:
         sport_key = market.raw.get("_sport_key")
-        if not sport_key:
+        if not sport_key or not opponent_team:
             return None
         for event in self._events_for_sport(sport_key):
             yes_is_home = _team_match(yes_team, event.home_team)
             yes_is_away = _team_match(yes_team, event.away_team)
             if not (yes_is_home or yes_is_away):
                 continue
-            other_team, other_field = (event.away_team, "away") if yes_is_home else (event.home_team, "home")
-            if _team_match(no_team, other_team):
+            other_team = event.away_team if yes_is_home else event.home_team
+            if _team_match(opponent_team, other_team):
                 return event
         return None
 
@@ -73,13 +80,15 @@ class SportsAiStrategy(Strategy):
         day_one_mode: bool = False,
     ) -> TradeSignal | NoTradeDecision:
         yes_team = market.raw.get("yes_sub_title", "")
-        no_team = market.raw.get("no_sub_title", "")
+        opponent_team = market.raw.get("_opponent", "")
         if not yes_team:
             return NoTradeDecision(self.name, market.ticker, "market has no yes_sub_title team name to match against")
+        if not opponent_team:
+            return NoTradeDecision(self.name, market.ticker, f"could not determine '{yes_team}''s opponent from sibling market")
 
-        event = self._match_event(market, yes_team, no_team)
+        event = self._match_event(market, yes_team, opponent_team)
         if not event:
-            return NoTradeDecision(self.name, market.ticker, f"no matching odds-API event found for '{yes_team}' vs '{no_team}'")
+            return NoTradeDecision(self.name, market.ticker, f"no matching odds-API event found for '{yes_team}' vs '{opponent_team}'")
 
         result = analyze(self.anthropic_client, self.model, event)
         if not result:

@@ -346,6 +346,17 @@
     </div>
   </div>
 
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-title"><span>Performance — win rate &amp; calibration</span><span class="meta" id="performance-meta"></span></div>
+      <div id="performance-body"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span>Exposure by underlying event</span><span class="meta" id="exposure-count"></span></div>
+      <div class="table-scroll" id="exposure-table"></div>
+    </div>
+  </div>
+
   <div class="panel">
     <div class="panel-title"><span>Decision log — every signal evaluated, traded or not</span><span class="meta" id="decisions-count"></span></div>
     <div class="table-scroll" id="decisions-table"></div>
@@ -482,7 +493,7 @@ const positions = DATA.positions || [];
 document.getElementById("positions-count").textContent = `${positions.length} open`;
 document.getElementById("positions-table").innerHTML = positions.length === 0
   ? `<div class="empty-state">No open positions.</div>`
-  : `<table><thead><tr><th>Market</th><th>Side</th><th class="num">Contracts</th><th class="num">Avg price</th><th class="num">Cost basis</th><th>Strategy</th></tr></thead><tbody>
+  : `<table><thead><tr><th>Market</th><th>Side</th><th class="num">Contracts</th><th class="num">Avg price</th><th class="num">Cost basis</th><th class="num">Confidence</th><th>Strategy</th></tr></thead><tbody>
       ${positions.map(p => `
         <tr>
           <td>${tagHtml(categoryOf(p.ticker))} ${p.ticker}</td>
@@ -490,6 +501,7 @@ document.getElementById("positions-table").innerHTML = positions.length === 0
           <td class="num">${p.contracts}</td>
           <td class="num">${p.avg_price_cents.toFixed(1)}c</td>
           <td class="num">${fmtUsd(p.cost_basis)}</td>
+          <td class="num">${p.confidence ? (p.confidence * 100).toFixed(0) + "%" : "—"}</td>
           <td>${p.strategy}</td>
         </tr>`).join("")}
     </tbody></table>`;
@@ -518,11 +530,22 @@ document.getElementById("decisions-table").innerHTML = decisions.length === 0
   ? `<div class="empty-state">No decisions logged yet — once the engine runs a poll cycle, every signal (trade or no-trade) will appear here with its reasoning.</div>`
   : `<table><thead><tr><th>Time</th><th>Strategy</th><th>Market</th><th>Result</th><th>Reasoning</th></tr></thead><tbody>
       ${decisions.map(d => {
-        const isVeto = d.type === "risk_veto";
-        const isTrade = !!d.action;
-        const statusClass = isVeto ? "veto" : isTrade ? "filled" : "notrade";
-        const statusLabel = isVeto ? "risk veto" : isTrade ? "trade" : "no trade";
-        const reasoning = d.risk_reason ? `${d.reasoning} — vetoed: ${d.risk_reason}` : d.reasoning;
+        let statusClass, statusLabel, reasoning;
+        if (d.type === "settlement") {
+          statusClass = d.won || d.realized_pnl > 0 ? "filled" : "rejected";
+          statusLabel = "settled " + d.result;
+          reasoning = `${d.side.toUpperCase()} x${d.contracts} → realized ${fmtUsd(d.realized_pnl)}`;
+        } else if (d.type === "exit") {
+          statusClass = d.exit_reason === "take_profit" ? "filled" : "veto";
+          statusLabel = d.exit_reason.replace("_", " ");
+          reasoning = `${d.side.toUpperCase()} x${d.contracts} @ ${d.exit_price_cents.toFixed(0)}c (entry ${d.entry_price_cents.toFixed(0)}c, ${(d.unrealized_pct*100).toFixed(1)}%)`;
+        } else {
+          const isVeto = d.type === "risk_veto";
+          const isTrade = !!d.action;
+          statusClass = isVeto ? "veto" : isTrade ? "filled" : "notrade";
+          statusLabel = isVeto ? "risk veto" : isTrade ? "trade" : "no trade";
+          reasoning = d.risk_reason ? `${d.reasoning} — vetoed: ${d.risk_reason}` : d.reasoning;
+        }
         return `
         <tr>
           <td>${fmtTime(d.evaluated_at)}</td>
@@ -533,6 +556,59 @@ document.getElementById("decisions-table").innerHTML = decisions.length === 0
         </tr>`;
       }).join("")}
     </tbody></table>`;
+
+// ---- performance (win rate + calibration) ----
+const perf = DATA.performance || {};
+document.getElementById("performance-meta").textContent = `${perf.total_settled || 0} settled`;
+if (!perf.total_settled) {
+  document.getElementById("performance-body").innerHTML =
+    `<div class="empty-state">No positions have settled yet — win rate and calibration fill in as contracts resolve.</div>`;
+} else {
+  const stratRows = Object.entries(perf.by_strategy || {}).map(([name, b]) => `
+    <tr>
+      <td>${name}</td>
+      <td class="num">${b.total}</td>
+      <td class="num">${(b.win_rate*100).toFixed(0)}%</td>
+      <td class="num">${fmtUsd(b.realized_pnl)}</td>
+    </tr>`).join("");
+  const calRows = (perf.calibration || []).map(c => `
+    <tr>
+      <td>${c.range}</td>
+      <td class="num">${c.count}</td>
+      <td class="num">${(c.avg_stated_confidence*100).toFixed(0)}%</td>
+      <td class="num">${(c.actual_win_rate*100).toFixed(0)}%</td>
+    </tr>`).join("");
+  document.getElementById("performance-body").innerHTML = `
+    <div class="stat-row" style="grid-template-columns:1fr 1fr;margin-bottom:14px;">
+      <div class="stat"><div class="label">Overall win rate</div><div class="value mono">${(perf.win_rate*100).toFixed(0)}%</div><div class="delta flat">${perf.wins}/${perf.total_settled} settled</div></div>
+      <div class="stat"><div class="label">Calibration samples</div><div class="value mono">${(perf.calibration||[]).reduce((a,c)=>a+c.count,0)}</div><div class="delta flat">confidence vs actual outcome</div></div>
+    </div>
+    <table><thead><tr><th>Strategy</th><th class="num">Settled</th><th class="num">Win rate</th><th class="num">Realized PnL</th></tr></thead><tbody>${stratRows}</tbody></table>
+    ${calRows ? `<div style="margin-top:14px;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-muted);">Confidence calibration</div>
+    <table><thead><tr><th>Stated confidence</th><th class="num">N</th><th class="num">Avg stated</th><th class="num">Actual win rate</th></tr></thead><tbody>${calRows}</tbody></table>` : ''}
+  `;
+}
+
+// ---- exposure by underlying event ----
+const exposures = DATA.directional_exposure || [];
+document.getElementById("exposure-count").textContent = `${exposures.length} events`;
+document.getElementById("exposure-table").innerHTML = exposures.length === 0
+  ? `<div class="empty-state">No open exposure.</div>`
+  : `<table><thead><tr><th>Underlying</th><th class="num">YES</th><th class="num">NO</th><th class="num">Net</th><th class="num">Total</th></tr></thead><tbody>
+      ${exposures.map(e => {
+        const capDollar = DATA.bankroll.equity * DATA.risk.max_exposure_per_underlying_pct;
+        const overCap = e.total_exposure > capDollar * 0.9;
+        return `
+        <tr>
+          <td>${tagHtml(categoryOf(e.underlying))} ${e.underlying}</td>
+          <td class="num">${fmtUsd(e.yes_exposure)}</td>
+          <td class="num">${fmtUsd(e.no_exposure)}</td>
+          <td class="num">${fmtUsd(e.net_exposure)}</td>
+          <td class="num"><span class="${overCap ? 'delta bad' : ''}">${fmtUsd(e.total_exposure)}</span></td>
+        </tr>`;
+      }).join("")}
+    </tbody></table>
+    <div style="margin-top:8px;font-size:0.7rem;color:var(--ink-muted);font-family:var(--mono);">cap: ${(DATA.risk.max_exposure_per_underlying_pct*100).toFixed(0)}% of equity per underlying event</div>`;
 
 // ---- footer ----
 const s = DATA.stats || {};

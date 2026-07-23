@@ -40,6 +40,7 @@ class PaperBroker:
                     avg_price_cents=p["avg_price_cents"],
                     strategy=p["strategy"],
                     opened_at=p.get("opened_at", now_iso()),
+                    confidence=p.get("confidence", 0.0),
                 )
                 for t, p in raw.get("positions", {}).items()
             }
@@ -88,7 +89,13 @@ class PaperBroker:
         return market.no_ask if action == OrderAction.BUY else market.no_bid
 
     def execute(
-        self, market: MarketSnapshot, action: OrderAction, side: Side, contracts: int, strategy: str
+        self,
+        market: MarketSnapshot,
+        action: OrderAction,
+        side: Side,
+        contracts: int,
+        strategy: str,
+        confidence: float = 0.0,
     ) -> Order:
         price_cents = self.fill_price_cents(market, action, side)
         cost = contracts * price_cents / 100.0
@@ -113,6 +120,9 @@ class PaperBroker:
                 existing.avg_price_cents = (
                     existing.avg_price_cents * existing.contracts + price_cents * contracts
                 ) / total_contracts
+                existing.confidence = (
+                    existing.confidence * existing.contracts + confidence * contracts
+                ) / total_contracts
                 existing.contracts = total_contracts
             else:
                 self.state.positions[key] = Position(
@@ -121,6 +131,7 @@ class PaperBroker:
                     contracts=contracts,
                     avg_price_cents=price_cents,
                     strategy=strategy,
+                    confidence=confidence,
                 )
             self.state.cash -= cost
         else:  # SELL / exit
@@ -165,6 +176,37 @@ class PaperBroker:
     def exposure_for_strategy(self, strategy: str) -> float:
         return sum(p.cost_basis() for p in self.state.positions.values() if p.strategy == strategy)
 
+    @staticmethod
+    def underlying_of(ticker: str) -> str:
+        """Kalshi tickers are `<event_ticker>-<market_suffix>` (confirmed against
+        the live API - e.g. every BTC strike closing at the same time shares one
+        event_ticker, and both team-markets of one game share one event_ticker).
+        Different strikes/sides of the same event move together, so they're
+        correlated risk, not independent - this is the grouping key for that."""
+        return ticker.rsplit("-", 1)[0]
+
+    def exposure_for_underlying(self, ticker: str) -> float:
+        underlying = self.underlying_of(ticker)
+        return sum(p.cost_basis() for p in self.state.positions.values() if self.underlying_of(p.ticker) == underlying)
+
+    def directional_exposure_by_underlying(self) -> dict[str, dict]:
+        """Groups every open position by underlying event and nets YES vs NO
+        cost basis, for the dashboard's aggregate-exposure view."""
+        groups: dict[str, dict] = {}
+        for p in self.state.positions.values():
+            underlying = self.underlying_of(p.ticker)
+            g = groups.setdefault(underlying, {"yes_exposure": 0.0, "no_exposure": 0.0, "strategies": set()})
+            if p.side.value == "yes":
+                g["yes_exposure"] += p.cost_basis()
+            else:
+                g["no_exposure"] += p.cost_basis()
+            g["strategies"].add(p.strategy)
+        for g in groups.values():
+            g["net_exposure"] = g["yes_exposure"] - g["no_exposure"]
+            g["total_exposure"] = g["yes_exposure"] + g["no_exposure"]
+            g["strategies"] = sorted(g["strategies"])
+        return groups
+
     def settle_resolved_positions(self, get_result) -> list[dict]:
         """Kalshi's 15-min/hourly contracts resolve on their own; this is what
         actually credits the win/loss into paper cash/realized_pnl instead of
@@ -193,6 +235,9 @@ class PaperBroker:
                     "result": result,
                     "strategy": pos.strategy,
                     "realized_pnl": realized,
+                    "confidence": pos.confidence,
+                    "won": realized > 0,
+                    "entry_price_cents": pos.avg_price_cents,
                 }
             )
         if settlements:
