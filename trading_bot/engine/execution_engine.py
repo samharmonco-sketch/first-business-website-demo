@@ -21,7 +21,7 @@ from ..models import MarketCategory, OrderAction, TradeSignal, now_iso
 from ..risk.risk_manager import RiskManager
 from ..sports.odds_client import OddsApiClient
 from ..strategies.day_one import DayOneStrategy
-from ..strategies.mispricing import CryptoMispricingStrategy
+from ..strategies.mispricing import CryptoMispricingStrategy, compute_atm_vols
 from ..strategies.momentum import CryptoMomentumStrategy
 from ..strategies.sports_ai import SportsAiStrategy
 
@@ -181,7 +181,11 @@ def run_cycle(ctx: EngineContext | None = None) -> dict:
 
     exits = _check_exits(ctx, crypto_markets + sports_markets)
 
+    atm_vols = compute_atm_vols(crypto_markets)
     for market in crypto_markets:
+        event = market.raw.get("event_ticker")
+        if event in atm_vols:
+            market.raw["_implied_vol"] = atm_vols[event]
         ctx.history.record(market.ticker, market.implied_yes_prob)
         strategies = [ctx.day_one_crypto] if day_one_mode else ctx.crypto_strategies
         for strategy in strategies:
