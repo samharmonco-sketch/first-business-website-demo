@@ -108,12 +108,17 @@ def _seconds_to_close(market: MarketSnapshot) -> float | None:
     return (close_dt - datetime.now(timezone.utc)).total_seconds()
 
 
-VOL_LO, VOL_HI = 0.02, 5.0
+VOL_LO, VOL_HI = 0.02, 2.5
 # A solution that lands within this margin of either search bound almost
 # always means the market price was degenerate (near 0% or 100%, typically a
 # thinly-traded or just-opened strike) rather than a genuine extreme vol -
-# treat it as "couldn't solve" rather than trusting a nonsense number.
-VOL_BOUNDARY_MARGIN = 0.05
+# treat it as "couldn't solve" rather than trusting a nonsense number. A
+# backtest against the batch that caused the original miscalibration found
+# a real gap here: with the old 5.0 upper bound, one solution landed at
+# 323.8% (nowhere near that boundary, but obviously implausible for a
+# ~22h crypto window) and was the single highest-confidence, losing trade -
+# 2.5 is already a very generous ceiling for real short-dated crypto vol.
+VOL_BOUNDARY_MARGIN = 0.10
 
 
 def implied_vol_from_price(spot: float, strike: float, direction: str, t_years: float, market_prob_yes: float) -> float | None:
