@@ -232,6 +232,12 @@ class KalshiAdapter(ExchangeAdapter):
         data = self._request("GET", f"/markets/{ticker}")
         return self._to_snapshot(data.get("market", data), MarketCategory.OTHER)
 
+    def get_market_result(self, ticker: str) -> str:
+        """Returns 'yes'/'no' once Kalshi has settled this market, '' otherwise."""
+        data = self._request("GET", f"/markets/{ticker}")
+        m = data.get("market", data)
+        return m.get("result", "") or ""
+
     # ---- trading (live mode only; paper mode uses PaperBroker instead) ----
 
     def place_order(

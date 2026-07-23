@@ -11,6 +11,7 @@ flattering relative to what a live order would realistically get.
 from __future__ import annotations
 
 import json
+import time
 import uuid
 from dataclasses import asdict
 from datetime import date, datetime, timezone
@@ -163,3 +164,38 @@ class PaperBroker:
 
     def exposure_for_strategy(self, strategy: str) -> float:
         return sum(p.cost_basis() for p in self.state.positions.values() if p.strategy == strategy)
+
+    def settle_resolved_positions(self, get_result) -> list[dict]:
+        """Kalshi's 15-min/hourly contracts resolve on their own; this is what
+        actually credits the win/loss into paper cash/realized_pnl instead of
+        leaving filled positions open (and exposure permanently used up)
+        forever. get_result(ticker) -> 'yes'/'no'/'' (still open)."""
+        settlements = []
+        for key, pos in list(self.state.positions.items()):
+            time.sleep(0.08)  # pace requests - one Kalshi call per open position, easy to hit rate limits
+            try:
+                result = get_result(pos.ticker)
+            except Exception:  # noqa: BLE001 - a lookup failure just leaves the position open to retry next cycle
+                continue
+            if result not in ("yes", "no"):
+                continue
+            payout_cents = 100.0 if pos.side.value == result else 0.0
+            proceeds = pos.contracts * payout_cents / 100.0
+            realized = proceeds - pos.cost_basis()
+            self.state.cash += proceeds
+            self.state.realized_pnl += realized
+            del self.state.positions[key]
+            settlements.append(
+                {
+                    "ticker": pos.ticker,
+                    "side": pos.side.value,
+                    "contracts": pos.contracts,
+                    "result": result,
+                    "strategy": pos.strategy,
+                    "realized_pnl": realized,
+                }
+            )
+        if settlements:
+            self.state.bankroll = self.state.equity
+            self.save()
+        return settlements

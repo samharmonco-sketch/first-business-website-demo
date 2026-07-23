@@ -101,6 +101,14 @@ def run_cycle(ctx: EngineContext | None = None) -> dict:
     no_trades = 0
     errors = []
 
+    settlements = ctx.broker.settle_resolved_positions(ctx.kalshi.get_market_result)
+    for s in settlements:
+        log_decision({"type": "settlement", "evaluated_at": now_iso(), **s})
+        logger.info(
+            "SETTLED [%s] %s %s x%d -> %s, realized_pnl=$%.2f",
+            s["strategy"], s["ticker"], s["side"], s["contracts"], s["result"], s["realized_pnl"],
+        )
+
     try:
         crypto_markets = ctx.kalshi.get_markets(MarketCategory.CRYPTO)
     except KalshiAuthError as exc:
@@ -167,6 +175,7 @@ def run_cycle(ctx: EngineContext | None = None) -> dict:
         "signals_evaluated": signals_evaluated,
         "trades_executed": trades_executed,
         "no_trades": no_trades,
+        "settlements": len(settlements),
         "errors": errors,
         "equity": ctx.broker.state.equity,
     }
