@@ -81,6 +81,7 @@ class Position:
     strategy: str
     opened_at: str = field(default_factory=now_iso)
     confidence: float = 0.0  # size-weighted average of the strategy's stated confidence across fills
+    vol_used: float = 0.0  # size-weighted average implied vol used to price this position, if applicable
 
     def cost_basis(self) -> float:
         return self.contracts * self.avg_price_cents / 100.0

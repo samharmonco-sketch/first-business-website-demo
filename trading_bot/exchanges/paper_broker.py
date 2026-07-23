@@ -41,6 +41,7 @@ class PaperBroker:
                     strategy=p["strategy"],
                     opened_at=p.get("opened_at", now_iso()),
                     confidence=p.get("confidence", 0.0),
+                    vol_used=p.get("vol_used", 0.0),
                 )
                 for t, p in raw.get("positions", {}).items()
             }
@@ -96,6 +97,7 @@ class PaperBroker:
         contracts: int,
         strategy: str,
         confidence: float = 0.0,
+        vol_used: float = 0.0,
     ) -> Order:
         price_cents = self.fill_price_cents(market, action, side)
         cost = contracts * price_cents / 100.0
@@ -123,6 +125,9 @@ class PaperBroker:
                 existing.confidence = (
                     existing.confidence * existing.contracts + confidence * contracts
                 ) / total_contracts
+                existing.vol_used = (
+                    existing.vol_used * existing.contracts + vol_used * contracts
+                ) / total_contracts
                 existing.contracts = total_contracts
             else:
                 self.state.positions[key] = Position(
@@ -132,6 +137,7 @@ class PaperBroker:
                     avg_price_cents=price_cents,
                     strategy=strategy,
                     confidence=confidence,
+                    vol_used=vol_used,
                 )
             self.state.cash -= cost
         else:  # SELL / exit
@@ -236,6 +242,7 @@ class PaperBroker:
                     "strategy": pos.strategy,
                     "realized_pnl": realized,
                     "confidence": pos.confidence,
+                    "vol_used": pos.vol_used,
                     "won": realized > 0,
                     "entry_price_cents": pos.avg_price_cents,
                 }
@@ -244,3 +251,14 @@ class PaperBroker:
             self.state.bankroll = self.state.equity
             self.save()
         return settlements
+
+    def reset_daily_loss_tracking(self) -> dict:
+        """Manually re-baselines the daily-loss-limit window to current
+        equity, for an operator explicitly clearing a halt rather than
+        waiting for the calendar day to roll over. Returns the before/after
+        for an audit log entry - this should never happen silently."""
+        before = {"day_start_bankroll": self.state.day_start_bankroll, "day_start_date": self.state.day_start_date}
+        self.state.day_start_bankroll = self.state.equity
+        self.state.day_start_date = date.today().isoformat()
+        self.save()
+        return {"before": before, "after": {"day_start_bankroll": self.state.day_start_bankroll, "day_start_date": self.state.day_start_date}}

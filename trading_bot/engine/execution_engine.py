@@ -75,7 +75,8 @@ def _execute_signal(ctx: EngineContext, signal: TradeSignal, day_one_mode: bool,
         return
 
     contracts = verdict.adjusted_contracts or signal.size_contracts
-    order = ctx.broker.execute(market, signal.action, signal.side, contracts, signal.strategy, signal.confidence)
+    vol_used = signal.extra.get("vol_used", 0.0)
+    order = ctx.broker.execute(market, signal.action, signal.side, contracts, signal.strategy, signal.confidence, vol_used)
     order.strategy = signal.strategy
     log_order(asdict(order))
     logger.info(
@@ -155,9 +156,13 @@ def run_cycle(ctx: EngineContext | None = None) -> dict:
     settlements = ctx.broker.settle_resolved_positions(ctx.kalshi.get_market_result)
     for s in settlements:
         log_decision({"type": "settlement", "evaluated_at": now_iso(), **s})
+        # Calibration detail logged per-trade as it settles, not just batched into
+        # the dashboard's summary table - confidence and vol are exactly the two
+        # numbers a calibration check needs, so they're in the log line itself.
         logger.info(
-            "SETTLED [%s] %s %s x%d -> %s, realized_pnl=$%.2f",
-            s["strategy"], s["ticker"], s["side"], s["contracts"], s["result"], s["realized_pnl"],
+            "SETTLED [%s] %s %s x%d -> %s, won=%s, realized_pnl=$%.2f, confidence=%.3f, vol_used=%.1f%%",
+            s["strategy"], s["ticker"], s["side"], s["contracts"], s["result"], s["won"],
+            s["realized_pnl"], s.get("confidence", 0.0), s.get("vol_used", 0.0) * 100,
         )
 
     try:

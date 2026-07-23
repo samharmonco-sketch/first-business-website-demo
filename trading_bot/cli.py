@@ -4,6 +4,7 @@ requirement in #5. Usage (from repo root):
   python -m trading_bot.cli status
   python -m trading_bot.cli kill [--flatten]
   python -m trading_bot.cli resume
+  python -m trading_bot.cli reset-daily-halt
 """
 from __future__ import annotations
 
@@ -11,7 +12,8 @@ import sys
 
 from trading_bot.exchanges.paper_broker import PaperBroker
 from trading_bot.config import load_config
-from trading_bot.logging_setup import CYCLES_LOG, DECISIONS_LOG, read_jsonl
+from trading_bot.logging_setup import CYCLES_LOG, DECISIONS_LOG, log_decision, read_jsonl
+from trading_bot.models import now_iso
 from trading_bot.risk.risk_manager import RiskManager
 
 
@@ -50,6 +52,17 @@ def cmd_resume() -> None:
     print("Kill switch disengaged. Trading may resume.")
 
 
+def cmd_reset_daily_halt() -> None:
+    cfg = load_config()
+    broker = PaperBroker(cfg.paper_starting_bankroll)
+    result = broker.reset_daily_loss_tracking()
+    log_decision({"type": "manual_daily_halt_reset", "evaluated_at": now_iso(), **result})
+    print("Daily-loss-limit window manually reset (logged for audit):")
+    print(f"  before: {result['before']}")
+    print(f"  after:  {result['after']}")
+    print("Note: the daily loss limit itself is NOT disabled - a fresh -{:.0%} drop from this new baseline will halt again.".format(cfg.risk.daily_loss_limit_pct))
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print(__doc__)
@@ -61,6 +74,8 @@ def main() -> int:
         cmd_kill(flatten="--flatten" in sys.argv[2:])
     elif cmd == "resume":
         cmd_resume()
+    elif cmd == "reset-daily-halt":
+        cmd_reset_daily_halt()
     else:
         print(__doc__)
         return 1

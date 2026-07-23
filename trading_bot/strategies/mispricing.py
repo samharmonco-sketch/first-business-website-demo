@@ -276,4 +276,5 @@ class CryptoMispricingStrategy(Strategy):
             confidence=min(0.95, abs(edge) * 3),
             reasoning=reasoning,
             edge=edge,
+            extra={"vol_used": vol, "vol_source": vol_source},
         )
