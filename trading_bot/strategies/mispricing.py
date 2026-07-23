@@ -14,8 +14,16 @@ across BTC/ETH/XRP/SOL simultaneously, and specifically inverted calibration
 vs-market vol gaps produced both the biggest apparent edge and the biggest
 actual error). Betting on cross-strike inconsistencies within one event's own
 pricing is a much narrower, more defensible claim than betting the whole
-market's volatility level is wrong. The fixed constants remain only as a
-fallback for the rare event with no usable ATM strike.
+market's volatility level is wrong.
+
+Single-strike markets (e.g. the 15-minute up/down contracts - KXBTC15M etc.)
+have no sibling strike to derive an ATM-consistent vol from, so there is no
+fixed-constant fallback here anymore: this strategy simply does not trade
+them. The first version's "fall back to a fixed guess" path is exactly what
+produced the earlier miscalibration, and running that same broken logic
+during validation would contaminate the calibration data being collected for
+the multi-strike case that actually got fixed. A dedicated approach for
+single-strike markets is a separate, later piece of work.
 
 Uses Kalshi's own numeric `floor_strike`/`strike_type` fields (confirmed
 against the live API) rather than parsing the strike out of market text -
@@ -32,30 +40,6 @@ from ..exchanges.spot_price import get_spot_price
 from ..models import AccountState, MarketSnapshot, NoTradeDecision, OrderAction, Side, TradeSignal
 from .base import Strategy
 
-# Fallback only - used when an event has no usable ATM strike to derive vol
-# from (e.g. only one strike currently listed). See module docstring: these
-# fixed guesses are what caused the inverse-calibration problem in the first
-# place, so the market-derived vol in compute_atm_vols() is always preferred.
-FALLBACK_ANNUAL_VOL = {
-    "BTC": 0.55,
-    "ETH": 0.65,
-    "SOL": 0.90,
-    "XRP": 0.85,
-    "DOGE": 1.10,
-    "LTC": 0.75,
-    "ADA": 0.85,
-    "AVAX": 0.95,
-    "LINK": 0.85,
-    "DOT": 0.90,
-    "BNB": 0.65,
-    "BCH": 0.80,
-    "XLM": 0.90,
-    "NEAR": 0.95,
-    "TON": 0.90,
-    "ZEC": 1.00,
-    "HYPE": 1.10,
-    "SHIB": 1.20,
-}
 STEADY_STATE_MIN_EDGE = 0.08
 DEFAULT_TRADE_DOLLARS = 100.0
 
@@ -168,6 +152,14 @@ def compute_atm_vols(crypto_markets: list[MarketSnapshot]) -> dict[str, float]:
 
     vols: dict[str, float] = {}
     for event, markets in by_event.items():
+        if len(markets) < 2:
+            # Single-strike events (e.g. the 15-min up/down contracts) have no
+            # other strike to check for consistency against - deriving a vol
+            # here would just self-reference back to the same market's own
+            # price, which isn't the cross-strike claim this method makes.
+            # Deliberately excluded rather than trading on a degenerate case -
+            # see module docstring.
+            continue
         asset = markets[0].raw.get("_asset")
         if not asset:
             continue
@@ -232,10 +224,16 @@ class CryptoMispricingStrategy(Strategy):
 
         t_years = seconds_to_close / (365.25 * 24 * 3600)
         vol = market.raw.get("_implied_vol")
-        vol_source = "market-derived (event ATM strike)"
         if vol is None:
-            vol = FALLBACK_ANNUAL_VOL.get(asset, 0.60)
-            vol_source = "fallback fixed guess (no ATM strike available)"
+            # No sibling strike in this event to derive an ATM-consistent vol
+            # from - typically a single-strike market (e.g. the 15-min
+            # up/down contracts). Deliberately not traded rather than falling
+            # back to a fixed guess - see module docstring.
+            return NoTradeDecision(
+                self.name, market.ticker,
+                "no market-derived implied vol available (single-strike market or no valid ATM sibling) - "
+                "not trading rather than using a fixed-guess fallback",
+            )
 
         z = (math.log(spot / strike) - 0.5 * vol**2 * t_years) / (vol * math.sqrt(t_years))
         model_prob_above = norm_cdf(z)
@@ -246,7 +244,7 @@ class CryptoMispricingStrategy(Strategy):
 
         reasoning = (
             f"{asset} spot=${spot:,.2f}, strike=${strike:,.2f} ({direction}), "
-            f"time_to_close={seconds_to_close/60:.1f}min, vol={vol:.0%} [{vol_source}], "
+            f"time_to_close={seconds_to_close/60:.1f}min, vol={vol:.0%} [market-derived ATM strike], "
             f"model_prob_yes={model_prob_yes:.3f} vs market_implied_yes={market.implied_yes_prob:.3f}, "
             f"edge={edge:+.3f} (min_edge={min_edge:.3f}, day_one_mode={day_one_mode})"
         )
@@ -276,5 +274,5 @@ class CryptoMispricingStrategy(Strategy):
             confidence=min(0.95, abs(edge) * 3),
             reasoning=reasoning,
             edge=edge,
-            extra={"vol_used": vol, "vol_source": vol_source},
+            extra={"vol_used": vol, "vol_source": "market-derived (event ATM strike)"},
         )
