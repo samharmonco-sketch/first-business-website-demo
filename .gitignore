@@ -2,6 +2,7 @@
 trading_bot/data/*.json
 trading_bot/data/logs/*.jsonl
 trading_bot/data/*.pem
+trading_bot/data/archive/
 __pycache__/
 *.pyc
 .venv/
