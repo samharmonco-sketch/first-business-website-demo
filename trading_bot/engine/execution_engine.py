@@ -58,7 +58,10 @@ def _log_signal_result(result) -> None:
     log_decision(record)
 
 
-def _execute_signal(ctx: EngineContext, signal: TradeSignal, day_one_mode: bool, market) -> None:
+def _execute_signal(ctx: EngineContext, signal: TradeSignal, day_one_mode: bool, market) -> bool:
+    """Returns whether an order actually filled - the caller uses this to
+    count real trades, not just strategy signals that got vetoed or
+    rejected (see the trades_executed note in run_cycle())."""
     verdict = ctx.risk.check(signal, day_one_mode=day_one_mode)
     if not verdict.approved:
         log_decision(
@@ -72,7 +75,7 @@ def _execute_signal(ctx: EngineContext, signal: TradeSignal, day_one_mode: bool,
             }
         )
         logger.info("RISK VETO [%s] %s: %s", signal.strategy, signal.ticker, verdict.reason)
-        return
+        return False
 
     contracts = verdict.adjusted_contracts or signal.size_contracts
     vol_used = signal.extra.get("vol_used", 0.0)
@@ -89,6 +92,7 @@ def _execute_signal(ctx: EngineContext, signal: TradeSignal, day_one_mode: bool,
         signal.limit_price_cents,
         signal.reasoning[:200],
     )
+    return order.status == "filled"
 
 
 def _check_exits(ctx: EngineContext, markets: list) -> list[dict]:
@@ -150,6 +154,7 @@ def run_cycle(ctx: EngineContext | None = None) -> dict:
     day_one_mode = cfg.risk.day_one_mode_enabled and is_first_ever_run()
     signals_evaluated = 0
     trades_executed = 0
+    trades_vetoed = 0
     no_trades = 0
     errors = []
 
@@ -198,8 +203,10 @@ def run_cycle(ctx: EngineContext | None = None) -> dict:
             signals_evaluated += 1
             _log_signal_result(result)
             if isinstance(result, TradeSignal):
-                _execute_signal(ctx, result, day_one_mode, market)
-                trades_executed += 1
+                if _execute_signal(ctx, result, day_one_mode, market):
+                    trades_executed += 1
+                else:
+                    trades_vetoed += 1
             else:
                 no_trades += 1
     ctx.history.save()
@@ -212,8 +219,10 @@ def run_cycle(ctx: EngineContext | None = None) -> dict:
             signals_evaluated += 1
             _log_signal_result(result)
             if isinstance(result, TradeSignal):
-                _execute_signal(ctx, result, day_one_mode, market)
-                trades_executed += 1
+                if _execute_signal(ctx, result, day_one_mode, market):
+                    trades_executed += 1
+                else:
+                    trades_vetoed += 1
             else:
                 no_trades += 1
 
@@ -236,6 +245,7 @@ def run_cycle(ctx: EngineContext | None = None) -> dict:
         "sports_markets_seen": len(sports_markets),
         "signals_evaluated": signals_evaluated,
         "trades_executed": trades_executed,
+        "trades_vetoed": trades_vetoed,
         "no_trades": no_trades,
         "settlements": len(settlements),
         "exits": len(exits),
@@ -244,11 +254,12 @@ def run_cycle(ctx: EngineContext | None = None) -> dict:
     }
     log_cycle(summary)
     logger.info(
-        "CYCLE done: crypto=%d sports=%d signals=%d trades=%d no_trades=%d exits=%d errors=%s equity=$%.2f",
+        "CYCLE done: crypto=%d sports=%d signals=%d trades=%d vetoed=%d no_trades=%d exits=%d errors=%s equity=$%.2f",
         len(crypto_markets),
         len(sports_markets),
         signals_evaluated,
         trades_executed,
+        trades_vetoed,
         no_trades,
         len(exits),
         errors,
