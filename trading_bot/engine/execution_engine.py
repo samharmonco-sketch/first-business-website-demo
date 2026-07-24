@@ -120,7 +120,8 @@ def _check_exits(ctx: EngineContext, markets: list) -> list[dict]:
         else:
             continue
 
-        order = ctx.broker.execute(market, OrderAction.SELL, pos.side, pos.contracts, pos.strategy)
+        contracts_sold = pos.contracts  # broker.execute() mutates pos.contracts to 0 (full sell) below
+        order = ctx.broker.execute(market, OrderAction.SELL, pos.side, contracts_sold, pos.strategy)
         order.strategy = pos.strategy
         log_order(asdict(order))
         log_decision(
@@ -130,7 +131,7 @@ def _check_exits(ctx: EngineContext, markets: list) -> list[dict]:
                 "strategy": pos.strategy,
                 "ticker": pos.ticker,
                 "side": pos.side.value,
-                "contracts": pos.contracts,
+                "contracts": contracts_sold,
                 "entry_price_cents": pos.avg_price_cents,
                 "exit_price_cents": current_bid,
                 "unrealized_pct": unrealized_pct,
@@ -139,7 +140,7 @@ def _check_exits(ctx: EngineContext, markets: list) -> list[dict]:
         )
         logger.info(
             "EXIT %s [%s] %s %s x%d @ %.0fc (entry %.0fc, %+.1f%%)",
-            exit_reason.upper(), pos.strategy, pos.ticker, pos.side.value, pos.contracts, current_bid,
+            exit_reason.upper(), pos.strategy, pos.ticker, pos.side.value, contracts_sold, current_bid,
             pos.avg_price_cents, unrealized_pct * 100,
         )
         exits.append({"ticker": pos.ticker, "reason": exit_reason})
