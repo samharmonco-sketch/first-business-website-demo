@@ -5,7 +5,25 @@ order entirely on any veto. This is the one place all risk requirements
 from the spec live: per-trade cap ($ and %), total exposure cap, daily loss
 halt, per-market cap, per-strategy cap, per-underlying-event concentration
 cap (different strikes of the same event are correlated, not independent),
-and the kill switch.
+a same-event double-entry guard (see check() below), and the kill switch.
+
+Same-event double-entry guard: every strategy evaluates each Kalshi contract
+independently - a game's two team-side markets, or an event's several
+strikes, are each scored against the same underlying model/AI estimate with
+no awareness of what else already got traded on that event this cycle or a
+prior one. That produced a real case: buying YES on "Phillies win" and,
+minutes later, NO on "Yankees win" for the same game - two different
+contracts expressing the literal same directional view, each sized and risk-
+checked as if it were an independent trade. The per-underlying exposure cap
+bounded the combined dollar size but did nothing to stop the redundant entry
+itself, and would silently keep doing it once confidence-scaled sizing
+replaces validation mode's flat size. check() now blocks any new contract on
+an underlying event that already has an open position under a *different*
+ticker/side, rather than just capping the dollar total. Adding to the exact
+same ticker+side (a persisting edge on one market across cycles) is left
+alone - that's not the double-entry pattern, it's normal position-building
+and paper_broker.execute() already averages it into the one existing
+position.
 """
 from __future__ import annotations
 
@@ -42,6 +60,17 @@ class RiskManager:
             return RiskVerdict(
                 False,
                 f"daily loss limit hit: {state.daily_pnl_pct:.1%} <= -{risk.daily_loss_limit_pct:.1%}, halting new trades",
+            )
+
+        underlying = self.broker.underlying_of(signal.ticker)
+        existing_on_underlying = [p for p in state.positions.values() if self.broker.underlying_of(p.ticker) == underlying]
+        is_same_position = any(p.ticker == signal.ticker and p.side.value == signal.side.value for p in existing_on_underlying)
+        if existing_on_underlying and not is_same_position:
+            held = ", ".join(f"{p.ticker}:{p.side.value}" for p in existing_on_underlying)
+            return RiskVerdict(
+                False,
+                f"already hold a position on underlying event '{underlying}' via a different contract ({held}) - "
+                f"not opening {signal.ticker}:{signal.side.value} as an independent trade (see module note on same-event double-entry)",
             )
 
         equity = state.equity
