@@ -22,7 +22,6 @@ from ..risk.risk_manager import RiskManager
 from ..sports.odds_client import OddsApiClient
 from ..strategies.day_one import DayOneStrategy
 from ..strategies.mispricing import CryptoMispricingStrategy, compute_atm_vols
-from ..strategies.momentum import CryptoMomentumStrategy
 from ..strategies.sports_ai import SportsAiStrategy
 
 logger = logging.getLogger("trading_bot.engine")
@@ -38,7 +37,10 @@ class EngineContext:
         self.odds_client = OddsApiClient(cfg.odds_api_key, cfg.odds_api_base_url)
         self.anthropic_client = Anthropic(api_key=cfg.anthropic_api_key) if cfg.anthropic_api_key else None
 
-        self.crypto_strategies = [CryptoMispricingStrategy(), CryptoMomentumStrategy(self.history)]
+        # crypto_momentum disabled: 19.8% win rate, -$730.85 net realized (21W/85L) -
+        # it was the strategy driving the account from $1,000 to under $85. Only
+        # crypto_mispricing has demonstrated real edge (74%+ win rate, net positive).
+        self.crypto_strategies = [CryptoMispricingStrategy()]
         self.sports_strategies = []
         if self.anthropic_client and cfg.odds_api_key:
             self.sports_strategies.append(SportsAiStrategy(self.odds_client, self.anthropic_client, cfg.anthropic_model))
